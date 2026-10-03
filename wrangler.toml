@@ -1,0 +1,6 @@
+name = "shikshakg-admin"
+compatibility_date = "2026-08-22"
+pages_build_output_dir = "out"
+
+[assets]
+directory = "out"
