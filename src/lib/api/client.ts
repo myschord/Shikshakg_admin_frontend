@@ -99,9 +99,12 @@ function buildUrl(path: string, query?: Query) {
 
 async function send(method: string, path: string, opts: RequestOptions, token: string | null): Promise<Response> {
   const isForm = typeof FormData !== "undefined" && opts.body instanceof FormData;
+  const isBlob = typeof Blob !== "undefined" && opts.body instanceof Blob;
+  const isRaw = isForm || isBlob;
   const headers: Record<string, string> = {
     Accept: "application/json",
-    ...(opts.body !== undefined && !isForm ? { "Content-Type": "application/json" } : {}),
+    ...(opts.body !== undefined && !isRaw ? { "Content-Type": "application/json" } : {}),
+    ...(isBlob ? { "Content-Type": (opts.body as Blob).type || "application/octet-stream" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(opts.idempotencyKey ? { "Idempotency-Key": opts.idempotencyKey } : {}),
     ...opts.headers,
@@ -110,7 +113,7 @@ async function send(method: string, path: string, opts: RequestOptions, token: s
     return await fetch(buildUrl(path, opts.query), {
       method,
       headers,
-      body: opts.body === undefined ? undefined : isForm ? (opts.body as FormData) : JSON.stringify(opts.body),
+      body: opts.body === undefined ? undefined : isRaw ? (opts.body as FormData | Blob) : JSON.stringify(opts.body),
       signal: opts.signal,
       keepalive: opts.keepalive,
     });

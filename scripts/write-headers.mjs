@@ -22,7 +22,7 @@ const policy = {
   "script-src": ["'self'", "'unsafe-inline'"],
   "style-src": ["'self'", "'unsafe-inline'"],
   // Staff preview question images, which come from the API or its storage origin.
-  "img-src": ["'self'", "data:", "blob:", "https:"],
+  "img-src": uniq(["'self'", "data:", "blob:", "https:", api]),
   "font-src": ["'self'", "data:"],
   "media-src": uniq(["'self'", "blob:", api]),
   "connect-src": uniq(["'self'", api]),

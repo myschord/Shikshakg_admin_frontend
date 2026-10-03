@@ -8,11 +8,12 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   timeout: 120_000,
-  expect: { timeout: 10_000 },
+  expect: { timeout: 15_000 },
   workers: 1,
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL: "http://localhost:3100", trace: "retain-on-failure" },
+  // A slow or busy machine should not fail a test that is only waiting for a click to become possible.
+  use: { baseURL: "http://localhost:3100", trace: "retain-on-failure", actionTimeout: 30_000 },
   webServer: { command: "node scripts/serve-out.mjs", url: "http://localhost:3100/login", reuseExistingServer: true, timeout: 30_000 },
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
 });

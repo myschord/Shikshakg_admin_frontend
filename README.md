@@ -10,7 +10,19 @@ Desktop first, usable on a tablet, not designed for phones.
 |---|---|---|
 | A0 | Shell, staff sign-in, role-aware menu, table / form / dialog kit | Done |
 | A1 | Exam dates: add, edit draft, publish, correct, recheck, retire, stale queue | Done. Catalog editor (categories, exams, stages, syllabus, blueprints, prerequisites) is not built yet |
-| A2 to A8 | Question bank and review, imports, PDF extraction, papers and tests, courses, commerce, AI controls, new backend features | Planned (menu shows "Soon") |
+| A2 | Question bank, keyboard review queue, student reports, pools and aliases | Done. Question history and a staff action log viewer need backend routes that do not exist yet |
+| A3 to A8 | JSON imports, PDF extraction, papers and tests, courses, commerce, AI controls, new backend features | Planned (menu shows "Soon") |
+
+## Review queue keys
+
+Open **Review queue** and clear it without the mouse: **A** approve and publish, **R** send back to draft with a note,
+**X** reject with a note, **S** or the right arrow skip, **U** undo the last decision (also after the queue is empty),
+**E** open the editor, **?** list the shortcuts. In a note box, **Enter** saves and **Esc** cancels. Every decision is
+announced to screen readers. Questions without a topic cannot be published; the queue says so and links to the editor.
+
+Two backend facts to know: the question list returns a preview, not the full question (the queue fetches the one on screen
+and prefetches the next), and resolving a student report does not change the question, so the console sends a live
+question back to review itself.
 
 ## Run it
 

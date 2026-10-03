@@ -88,3 +88,39 @@ export async function studentEvents(s: Account, examSlug: string): Promise<{ tit
 }
 
 export const horizontalOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+/** A direct API call as an account, for setting up and checking data without going through the screens. */
+export async function apiAs<T = any>(a: Account, method: string, path: string, body?: unknown): Promise<T> {
+  return json(path, { method, headers: { authorization: `Bearer ${a.access}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+/** First subject and topic of an exam's syllabus, for building valid questions. */
+export async function firstTopic(exam: string, stage: string): Promise<{ subject: string; topic: string }> {
+  const s = await json(`/exams/${exam}/syllabus?stage=${stage}`, { method: "GET" });
+  const sub = s.subjects.find((x: any) => x.topics.length) ?? s.subjects[0];
+  return { subject: sub.slug, topic: sub.topics[0]?.slug };
+}
+
+/** A question written by staff, optionally unclassified (no topic) and moved to review. */
+export async function seedQuestion(a: Account, opts: { exam: string; stage: string; tag: string; topic?: boolean; review?: boolean }) {
+  const t = await firstTopic(opts.exam, opts.stage);
+  const q = await apiAs(a, "POST", "/admin/questions", {
+    source_type: "ADMIN_CREATED",
+    exam_slug: opts.exam,
+    stage_slug: opts.stage,
+    subject_slug: t.subject,
+    topic_slug: opts.topic === false ? null : t.topic,
+    difficulty: "easy",
+    question_type: "direct_fact",
+    pattern: "single_correct_mcq",
+    correct_options: ["B"],
+    translations: [
+      { language: "en", stem: `[E2E] ${opts.tag} which is right?`, options: { A: "Wrong one", B: "Right one", C: "Wrong two", D: "Wrong three" }, explanation: "Because B." },
+      { language: "hi", stem: `[E2E] ${opts.tag} सही कौन सा है?`, options: { A: "गलत एक", B: "सही", C: "गलत दो", D: "गलत तीन" }, explanation: null },
+    ],
+  });
+  if (opts.review !== false) await apiAs(a, "POST", `/admin/questions/${q.id}/status`, { status: "in_review", note: "e2e" });
+  return q as { id: string; version: number };
+}
+
+export const questionStatus = async (a: Account, id: string): Promise<string> => (await apiAs(a, "GET", `/admin/questions/${id}`)).status;

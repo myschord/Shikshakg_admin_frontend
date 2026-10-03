@@ -91,7 +91,7 @@ function SidebarBody({ groups, pathname }: { groups: NavGroup[]; pathname: strin
             <p className="px-3 pb-1 text-xs font-bold uppercase tracking-wide text-ink-muted">{g.title}</p>
             <ul className="space-y-0.5">
               {g.items.map((i) => {
-                const active = i.href === "/" ? pathname === "/" : pathname === i.href || pathname.startsWith(`${i.href}/`);
+                const active = i.href === pathname || (i.href !== "/" && pathname.startsWith(`${i.href}/`) && !groups.some((gg) => gg.items.some((o) => o.href.length > i.href.length && (pathname === o.href || pathname.startsWith(`${o.href}/`)))));
                 const Icon = i.icon;
                 const base = "flex min-h-[44px] items-center gap-3 rounded-lg px-3 text-sm font-medium";
                 return (

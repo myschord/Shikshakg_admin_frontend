@@ -1,18 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, CheckCircle2, CircleDashed } from "lucide-react";
+import { CalendarClock, CheckCircle2, CircleDashed, Flag, ListChecks, type LucideIcon } from "lucide-react";
 import ErrorState from "@/components/kit/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useStale } from "@/lib/hooks/useExamEvents";
+import { useQuestionList, useReports } from "@/lib/hooks/useQuestions";
 
-const LATER = ["Questions waiting for review", "Open student reports", "Pending refunds", "Failed imports", "Suspicious AI questions"];
+const LATER = ["Pending refunds", "Failed imports", "Suspicious AI questions"];
+
+/** "12" when the whole queue was loaded, "50+" when there is more than one page. */
+const count = (n: number, more: boolean) => `${n}${more ? "+" : ""}`;
 
 /** The day's work queues. Only queues whose screens exist show real counts. */
 export default function TodayPage() {
   const { user } = useAuth();
   const stale = useStale(30, 60);
+  const review = useQuestionList({ status: "in_review" });
+  const reports = useReports("open");
   const first = user?.full_name.split(" ")[0] ?? "";
 
   return (
@@ -60,6 +66,29 @@ export default function TodayPage() {
           </div>
         </article>
 
+
+        <Queue
+          icon={ListChecks}
+          title="Questions waiting for review"
+          href="/questions/review"
+          cta="Open the review queue"
+          q={review}
+          n={review.data ? count(review.data.pages.flatMap((x) => x.items).length, !!review.hasNextPage) : ""}
+          done="Nothing is waiting for review."
+          empty={review.data?.pages[0]?.items.length === 0}
+          blurb="Imported and AI-drafted questions that must be approved before students see them."
+        />
+        <Queue
+          icon={Flag}
+          title="Open student reports"
+          href="/reports"
+          cta="Open the reports"
+          q={reports}
+          n={reports.data ? count(reports.data.pages.flatMap((x) => x.items).length, !!reports.data.pages.at(-1)?.has_more) : ""}
+          done="No question is currently flagged."
+          empty={reports.data?.pages[0]?.items.length === 0}
+          blurb="Reports students filed on questions. Each one is a possible mistake in front of learners."
+        />
         <article className="rounded-2xl border border-dashed border-line bg-white p-5">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ink/5 text-ink-muted">
@@ -78,5 +107,43 @@ export default function TodayPage() {
         </article>
       </section>
     </div>
+  );
+}
+
+function Queue({ icon: Icon, title, href, cta, q, n, done, empty, blurb }: { icon: LucideIcon; title: string; href: string; cta: string; q: { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown }; n: string; done: string; empty: boolean; blurb: string }) {
+  return (
+    <article className="rounded-2xl border border-line bg-white p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-border-tint text-primary-dark">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold">{title}</h3>
+          {q.isPending ? (
+            <Skeleton className="mt-2 h-8 w-24" />
+          ) : q.isError ? (
+            <div className="mt-2">
+              <ErrorState compact error={q.error} onRetry={() => q.refetch()} />
+            </div>
+          ) : (
+            <>
+              <p className="mt-1 text-3xl font-extrabold tabular-nums">{empty ? 0 : n}</p>
+              <p className="text-sm text-ink-muted">
+                {empty ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-success-text" aria-hidden /> {done}
+                  </span>
+                ) : (
+                  blurb
+                )}
+              </p>
+              <Link href={href} className="mt-3 inline-flex min-h-[44px] items-center font-semibold text-primary hover:underline">
+                {cta}
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </article>
   );
 }

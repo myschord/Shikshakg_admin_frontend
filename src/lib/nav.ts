@@ -1,4 +1,4 @@
-import { BookOpenCheck, CalendarClock, ClipboardList, FileText, FileUp, Flag, GraduationCap, Home, Layers, Library, Sparkles, Tags, UserCog, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpenCheck, CalendarClock, ClipboardList, FileText, FileUp, Flag, GraduationCap, Home, Layers, Library, ListChecks, Sparkles, Tags, UserCog, Wallet, type LucideIcon } from "lucide-react";
 import type { StaffRole } from "@/lib/api/auth";
 
 export type NavItem = {
@@ -23,9 +23,10 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Exam dates", href: "/exam-dates", icon: CalendarClock, roles: both, built: true },
       { label: "Catalog", href: "/catalog", icon: Layers, roles: both, built: false },
-      { label: "Question bank", href: "/questions", icon: Library, roles: both, built: false },
-      { label: "Student reports", href: "/reports", icon: Flag, roles: both, built: false },
-      { label: "Pools and aliases", href: "/pools", icon: Tags, roles: both, built: false },
+      { label: "Question bank", href: "/questions", icon: Library, roles: both, built: true },
+      { label: "Review queue", href: "/questions/review", icon: ListChecks, roles: both, built: true },
+      { label: "Student reports", href: "/reports", icon: Flag, roles: both, built: true },
+      { label: "Pools and aliases", href: "/pools", icon: Tags, roles: both, built: true },
       { label: "JSON imports", href: "/imports", icon: FileUp, roles: both, built: false },
       { label: "PDF extraction", href: "/pdf", icon: FileText, roles: both, built: false },
       { label: "Papers", href: "/papers", icon: BookOpenCheck, roles: both, built: false },
