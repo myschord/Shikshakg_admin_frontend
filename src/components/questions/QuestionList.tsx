@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ListChecks, Plus } from "lucide-react";
 import { toast } from "react-toastify";
@@ -31,10 +32,11 @@ const BULK: { status: QuestionStatus; label: string }[] = [
 /** Every question, filterable, with bulk status changes. The review queue is the "In review" filter in focused mode. */
 export default function QuestionList() {
   const names = useExamNames();
-  const [exam, setExam] = useState("");
-  const [status, setStatus] = useState<QuestionStatus | "">("");
+  const params = useSearchParams();
+  const [exam, setExam] = useState(params.get("exam") ?? "");
+  const [status, setStatus] = useState<QuestionStatus | "">((params.get("status") as QuestionStatus | null) ?? "");
   const [source, setSource] = useState<(typeof SOURCES)[number]["v"]>("");
-  const [paper, setPaper] = useState("");
+  const [paper, setPaper] = useState(params.get("paper") ?? "");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [bulk, setBulk] = useState<(typeof BULK)[number] | null>(null);
   const [note, setNote] = useState("");

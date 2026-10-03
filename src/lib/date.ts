@@ -28,3 +28,17 @@ export function checkedLabel(iso: string): string {
   const d = daysSince(iso);
   return `${formatDay(istDay(iso))} (${d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`})`;
 }
+
+const istParts = new Intl.DateTimeFormat("en-CA", { timeZone: IST, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+
+/** An instant as the value of an <input type="datetime-local">, in India time. Empty when there is none. */
+export function toIstLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(withZone(iso));
+  if (Number.isNaN(d.getTime())) return "";
+  const p = Object.fromEntries(istParts.formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+/** The value of a datetime-local input (read as India time) as an ISO instant. */
+export const fromIstLocalInput = (value: string): string => `${value}:00+05:30`;

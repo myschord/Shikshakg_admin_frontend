@@ -1,7 +1,12 @@
+import { Suspense } from "react";
 import QuestionList from "@/components/questions/QuestionList";
 
 export const metadata = { title: "Question bank" };
 
 export default function Page() {
-  return <QuestionList />;
+  return (
+    <Suspense fallback={null}>
+      <QuestionList />
+    </Suspense>
+  );
 }
