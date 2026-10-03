@@ -11,7 +11,8 @@ Desktop first, usable on a tablet, not designed for phones.
 | A0 | Shell, staff sign-in, role-aware menu, table / form / dialog kit | Done |
 | A1 | Exam dates: add, edit draft, publish, correct, recheck, retire, stale queue | Done. Catalog editor (categories, exams, stages, syllabus, blueprints, prerequisites) is not built yet |
 | A2 | Question bank, keyboard review queue, student reports, pools and aliases | Done. Question history and a staff action log viewer need backend routes that do not exist yet |
-| A3 to A8 | JSON imports, PDF extraction, papers and tests, courses, commerce, AI controls, new backend features | Planned (menu shows "Soon") |
+| A3 | JSON imports and PDF extraction review | Done. Tested end to end with a generated PDF: upload, review beside the page, import, publish |
+| A4 to A8 | Papers and tests, courses, commerce, AI controls, new backend features | Planned (menu shows "Soon") |
 
 ## Review queue keys
 
@@ -23,6 +24,20 @@ announced to screen readers. Questions without a topic cannot be published; the 
 Two backend facts to know: the question list returns a preview, not the full question (the queue fetches the one on screen
 and prefetches the next), and resolving a student report does not change the question, so the console sends a live
 question back to review itself.
+
+## From a PDF to published questions
+
+1. **PDF extraction**: upload the PDF (a compilation book or one paper), pick its subject, and leave it. A worker reads each
+   page; the document shows "Ready to review" when done.
+2. **Open the document**: the original page is on the left with the question outlined, the extracted question on the right.
+   Every automatic check that failed is listed in plain words; "Must fix" ones block approval. Fix text, answer, source
+   and topic, then **Ctrl + Enter** to save and approve, or **X** to reject with a note (**J** / **K** move between questions).
+3. **Import**: approved questions are sent to the question bank as questions waiting for review. The import runs in the
+   background; follow it from the banner.
+4. **Review queue**: publish them with **A**. Only then can students see them.
+
+JSON imports follow the same last two steps. The importer matches records by their text, so uploading the same wording again
+updates the existing question instead of creating a copy.
 
 ## Run it
 

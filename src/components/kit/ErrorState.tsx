@@ -10,6 +10,9 @@ export default function ErrorState({ error, onRetry, compact = false }: { error:
   const message = error instanceof Error && error.message ? error.message : "Something went wrong. Please try again.";
   const hint = retryHint(error);
   const id = isApiError(error) ? error.requestId : null;
+  const lines = isApiError(error) && Array.isArray(error.details)
+    ? (error.details as { loc?: unknown[]; message?: string }[]).slice(0, 5).map((d) => `${Array.isArray(d.loc) ? d.loc.filter((x) => x !== "body" && x !== "query").join(" ") : ""}${d.message ? `: ${d.message}` : ""}`.trim()).filter(Boolean)
+    : [];
 
   return (
     <div role="alert" className={`flex flex-col items-start gap-2 rounded-xl border border-error/25 bg-error/5 ${compact ? "p-3" : "p-5"}`}>
@@ -17,6 +20,13 @@ export default function ErrorState({ error, onRetry, compact = false }: { error:
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-error-text" aria-hidden /> {message}
       </p>
       {hint && <p className="text-sm text-ink-muted">{hint}</p>}
+      {lines.length > 0 && (
+        <ul className="list-disc pl-5 text-xs text-ink-muted">
+          {lines.map((l, i) => (
+            <li key={i}>{l}</li>
+          ))}
+        </ul>
+      )}
       <div className="flex flex-wrap items-center gap-3">
         {onRetry && (
           <button type="button" onClick={onRetry} className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-primary hover:underline">

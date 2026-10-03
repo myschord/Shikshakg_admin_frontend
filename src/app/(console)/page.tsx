@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, CheckCircle2, CircleDashed, Flag, ListChecks, type LucideIcon } from "lucide-react";
+import { CalendarClock, CheckCircle2, CircleDashed, FileText, FileWarning, Flag, ListChecks, type LucideIcon } from "lucide-react";
 import ErrorState from "@/components/kit/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useStale } from "@/lib/hooks/useExamEvents";
+import { useImportJobs, usePdfDocuments } from "@/lib/hooks/useImports";
 import { useQuestionList, useReports } from "@/lib/hooks/useQuestions";
 
-const LATER = ["Pending refunds", "Failed imports", "Suspicious AI questions"];
+const LATER = ["Pending refunds", "Suspicious AI questions"];
 
 /** "12" when the whole queue was loaded, "50+" when there is more than one page. */
 const count = (n: number, more: boolean) => `${n}${more ? "+" : ""}`;
@@ -19,6 +20,10 @@ export default function TodayPage() {
   const stale = useStale(30, 60);
   const review = useQuestionList({ status: "in_review" });
   const reports = useReports("open");
+  const pdfs = usePdfDocuments();
+  const imports = useImportJobs();
+  const pdfPending = (pdfs.data?.pages[0]?.items ?? []).reduce((n, d) => n + (d.status === "extracted" ? ((d.review_counts as Record<string, number>).pending ?? 0) : 0), 0);
+  const failedImports = (imports.data?.pages[0]?.items ?? []).filter((j) => j.status === "failed" || j.failed_count > 0).length;
   const first = user?.full_name.split(" ")[0] ?? "";
 
   return (
@@ -88,6 +93,28 @@ export default function TodayPage() {
           done="No question is currently flagged."
           empty={reports.data?.pages[0]?.items.length === 0}
           blurb="Reports students filed on questions. Each one is a possible mistake in front of learners."
+        />
+        <Queue
+          icon={FileText}
+          title="PDF questions to check"
+          href="/pdf"
+          cta="Open PDF extraction"
+          q={pdfs}
+          n={String(pdfPending)}
+          done="No extracted question is waiting for you."
+          empty={pdfPending === 0}
+          blurb="Questions read from uploaded PDFs that you have not approved or rejected yet."
+        />
+        <Queue
+          icon={FileWarning}
+          title="Imports with failures"
+          href="/imports"
+          cta="Open JSON imports"
+          q={imports}
+          n={String(failedImports)}
+          done="No recent import had a failed record."
+          empty={failedImports === 0}
+          blurb="Recent import files where some records failed or the import stopped."
         />
         <article className="rounded-2xl border border-dashed border-line bg-white p-5">
           <div className="flex items-start gap-3">

@@ -13,12 +13,26 @@ const password = () => `E2e-${uniq()}-Zq9!x`;
 
 export type Account = { email: string; password: string; role: "admin" | "content_editor" | "student"; access: string; refresh: string; user: unknown };
 
+/** fetch that tries again on a dropped connection (a busy local backend resets one now and then). */
+async function resilientFetch(url: string, init: RequestInit): Promise<Response> {
+  let last: unknown;
+  for (let i = 0; i < 4; i++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      last = err;
+      await sleep(1000 * (i + 1));
+    }
+  }
+  throw last;
+}
+
 async function json(path: string, init: RequestInit) {
-  let res = await fetch(`${API}${path}`, { ...init, headers: { "content-type": "application/json", ...(init.headers ?? {}) } });
+  let res = await resilientFetch(`${API}${path}`, { ...init, headers: { "content-type": "application/json", ...(init.headers ?? {}) } });
   // The backend rate-limits sign-ups; wait out the Retry-After and try again.
   for (let i = 0; i < 5 && res.status === 429; i++) {
     await sleep((Number(res.headers.get("retry-after")) || 5) * 1000 + 500);
-    res = await fetch(`${API}${path}`, { ...init, headers: { "content-type": "application/json", ...(init.headers ?? {}) } });
+    res = await resilientFetch(`${API}${path}`, { ...init, headers: { "content-type": "application/json", ...(init.headers ?? {}) } });
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`${init.method} ${path} -> ${res.status} ${JSON.stringify(body)}`);
