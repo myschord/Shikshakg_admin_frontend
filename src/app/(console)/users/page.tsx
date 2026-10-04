@@ -1,5 +1,7 @@
-import ComingSoon from "@/components/kit/ComingSoon";
+import UsersScreen from "@/components/users/UsersScreen";
+
+export const metadata = { title: "Users and roles" };
 
 export default function Page() {
-  return <ComingSoon title="Users and roles" phase="A8">Needs new backend routes for user search and role changes. Administrators only.</ComingSoon>;
+  return <UsersScreen />;
 }

@@ -1,4 +1,4 @@
-import { BookOpenCheck, CalendarClock, ClipboardList, FileText, FileUp, Flag, GraduationCap, Home, Layers, Library, ListChecks, Sparkles, Tags, UserCog, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpenCheck, Megaphone, Newspaper, History, CalendarCheck, CalendarClock, ClipboardList, FileText, FileUp, Flag, GraduationCap, Home, Layers, Library, ListChecks, Sparkles, Tags, UserCog, Wallet, type LucideIcon } from "lucide-react";
 import type { StaffRole } from "@/lib/api/auth";
 
 export type NavItem = {
@@ -32,6 +32,8 @@ export const navGroups: NavGroup[] = [
       { label: "Papers", href: "/papers", icon: BookOpenCheck, roles: both, built: true },
       { label: "Tests", href: "/tests", icon: ClipboardList, roles: both, built: true },
       { label: "Courses", href: "/courses", icon: GraduationCap, roles: both, built: true },
+      { label: "Current affairs", href: "/current-affairs", icon: Newspaper, roles: both, built: true },
+      { label: "Daily quiz", href: "/daily-quiz", icon: CalendarCheck, roles: both, built: true },
     ],
   },
   {
@@ -39,7 +41,9 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Commerce", href: "/commerce", icon: Wallet, roles: adminOnly, built: true },
       { label: "AI controls", href: "/ai-controls", icon: Sparkles, roles: adminOnly, built: true },
-      { label: "Users and roles", href: "/users", icon: UserCog, roles: adminOnly, built: false },
+      { label: "Announcements", href: "/announcements", icon: Megaphone, roles: adminOnly, built: true },
+      { label: "Users and roles", href: "/users", icon: UserCog, roles: adminOnly, built: true },
+      { label: "Action log", href: "/action-log", icon: History, roles: adminOnly, built: true },
     ],
   },
 ];

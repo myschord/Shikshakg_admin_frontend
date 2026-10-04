@@ -35,7 +35,7 @@ export default function DataTable<T>({
   if (loading) return <Skeleton className="h-48" />;
   if (!rows || rows.length === 0) return <div className="rounded-xl border border-dashed border-line bg-white p-8 text-center text-sm text-ink-muted">{empty}</div>;
   return (
-    <div role="region" aria-label={caption} tabIndex={0} className="overflow-x-auto rounded-xl border border-line bg-white">
+    <div role="region" aria-label={caption} tabIndex={0} className="relative overflow-x-auto rounded-xl border border-line bg-white">
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
