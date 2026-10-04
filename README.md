@@ -14,7 +14,8 @@ Desktop first, usable on a tablet, not designed for phones.
 | A3 | JSON imports and PDF extraction review | Done. Tested end to end with a generated PDF: upload, review beside the page, import, publish |
 | A4 | Papers and tests | Done. A paper becomes a published test a student can start; locked after first attempt, new version replaces it |
 | A5 | Courses and video upload | Done. Build sections, chapters and lectures; upload an MP4, topics, notes and links; publish; a student can play a free lecture |
-| A6 to A8 | Commerce, AI controls, new backend features | Planned (menu shows "Soon") |
+| A6 | Commerce (admin role only) | Done. Products and prices, orders, refunds, give and take away access. Refund processing is tested with faked server answers, because it moves real money |
+| A7 to A8 | AI controls, new backend features | Planned (menu shows "Soon") |
 
 ## Review queue keys
 

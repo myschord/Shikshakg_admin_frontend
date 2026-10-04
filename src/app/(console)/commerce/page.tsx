@@ -1,5 +1,12 @@
-import ComingSoon from "@/components/kit/ComingSoon";
+import { Suspense } from "react";
+import CommerceScreen from "@/components/commerce/CommerceScreen";
+
+export const metadata = { title: "Commerce" };
 
 export default function Page() {
-  return <ComingSoon title="Commerce" phase="A6">Products, prices, orders, refunds and entitlements. Administrators only.</ComingSoon>;
+  return (
+    <Suspense fallback={null}>
+      <CommerceScreen />
+    </Suspense>
+  );
 }
