@@ -31,7 +31,7 @@ export const navGroups: NavGroup[] = [
       { label: "PDF extraction", href: "/pdf", icon: FileText, roles: both, built: true },
       { label: "Papers", href: "/papers", icon: BookOpenCheck, roles: both, built: true },
       { label: "Tests", href: "/tests", icon: ClipboardList, roles: both, built: true },
-      { label: "Courses", href: "/courses", icon: GraduationCap, roles: both, built: false },
+      { label: "Courses", href: "/courses", icon: GraduationCap, roles: both, built: true },
     ],
   },
   {

@@ -13,7 +13,8 @@ Desktop first, usable on a tablet, not designed for phones.
 | A2 | Question bank, keyboard review queue, student reports, pools and aliases | Done. Question history and a staff action log viewer need backend routes that do not exist yet |
 | A3 | JSON imports and PDF extraction review | Done. Tested end to end with a generated PDF: upload, review beside the page, import, publish |
 | A4 | Papers and tests | Done. A paper becomes a published test a student can start; locked after first attempt, new version replaces it |
-| A5 to A8 | Courses, commerce, AI controls, new backend features | Planned (menu shows "Soon") |
+| A5 | Courses and video upload | Done. Build sections, chapters and lectures; upload an MP4, topics, notes and links; publish; a student can play a free lecture |
+| A6 to A8 | Commerce, AI controls, new backend features | Planned (menu shows "Soon") |
 
 ## Review queue keys
 
