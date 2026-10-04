@@ -108,7 +108,6 @@ Rules: the test must be published and belong to the exam; a day in the past cann
 | Blueprint sections cannot be read back | `GET .../blueprints` returns totals only, not the sections, subjects or difficulty mix, so a new version is written from scratch. | Return sections in `BlueprintOut`. |
 | Taxonomy has no descriptions or Hindi names on read | `TaxonomySubjectOut` has only id, slug and name, so the console can rename but not edit descriptions or Hindi names. | Add `description` and `localized_names` to the taxonomy read. |
 | Syllabus order is lost on read | `GET /exams/{slug}/syllabus` groups topics by subject, but the order is stored per topic. The console shows them grouped, and saving rewrites the order as shown. | Return an `position` per topic, or a flat ordered list. |
-| Imported questions appear in the list a moment after the job says finished | The job page shows the records as done about half a second before `GET /admin/questions` lists them, which briefly shows an empty review queue. | Commit the question rows before the job counts, or mark the job finished after. |
 
 ## Part 3. Still to build on the console side
 

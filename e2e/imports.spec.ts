@@ -61,10 +61,12 @@ test.describe("A3: JSON imports", () => {
       content: { question: `[E2E] import ${n} ${tag} which is right?`, options: { A: "One", B: "Two", C: "Three", D: "Four" }, answer: "B", explanation: "Because two." },
       metadata: { source_type: "ADMIN_CREATED", exam_id: "bpsc", exam_stage: "prelims", subject_id: subject, topic_id: t.topic, language: "en", difficulty: "easy", question_type: "direct_fact" },
     });
-    await file.setInputFiles(json([rec(1), rec(2), rec(3), rec(4, "no-such-subject")]));
+    const upload = json([rec(1), rec(2), rec(3), rec(4, "no-such-subject")]);
+    await file.setInputFiles(upload);
     await expect(page.getByText("4 questions found in this file.")).toBeVisible();
     await importBtn.click();
-    const row = page.locator("tr").filter({ hasText: /questions-.*\.json/ }).first();
+    // Open the job just made, found by its own file name; the list also holds jobs of earlier runs.
+    const row = page.locator("tr").filter({ hasText: upload.name });
     await expect(row).toBeVisible();
     await row.getByRole("link").click();
 
@@ -84,7 +86,6 @@ test.describe("A3: JSON imports", () => {
     await expect(bad).toContainText(/subject/i);
     // The good ones wait in the review queue, not in front of students.
     const s = await session(editor);
-    // The job page can say Finished a moment before the new questions appear in the list.
     await expect.poll(async () => (await apiAs(s, "GET", "/admin/questions?exam=bpsc&status=in_review&limit=100")).items.length, { timeout: 15_000 }).toBe(3);
   });
 
