@@ -8,6 +8,11 @@ Money amounts are decimal strings, times are ISO instants, dates are India calen
 
 ## Part 1. Features with a finished screen and no route
 
+**Update, backend phase 17** (branch `phase/17-announcements-daily-quiz`, 2026-10-04): announcements (section 3) and the daily quiz (section 5) now exist on the server. The console still runs them on sample data until it is switched over. Where the real routes differ from what is written below, the real behaviour wins:
+
+- announcements: a link must be an **app path** (`/exams/bpsc/tests`); `https://` is refused. A new status `sending` appears between scheduled and sent: "send now" answers `sending`, and `recipients` and `read_count` arrive once it is `sent`. Unknown fields in the body are refused. Only administrators may use the routes.
+- daily quiz: the test must also be a **free preview** (`test_not_free`); swapping a day students have attempted is refused (`quiz_has_attempts`); list rows carry `test_status`; the student route answers 404 `no_daily_quiz` when none is set.
+
 | Screen | Who may use it | Status in the console |
 |---|---|---|
 | Users and roles | admin | Built on sample data |
