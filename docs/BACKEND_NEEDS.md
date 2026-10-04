@@ -111,6 +111,18 @@ Staff routes (the student route is `GET /exams/{slug}/daily-quiz`, returning tod
 
 Rules: the test must be published and belong to the exam; a day in the past cannot be set (`date_in_past`); the same test cannot be the quiz of two days (`test_already_scheduled`, details name the other day); today's and earlier days cannot be removed (`date_locked`). The attempt runs through the normal test routes; the backend credits the streak (rule D2 in the plan). Audit: `daily_quiz.scheduled|cleared`.
 
+### 6. AI tutor review (admin only, built in backend phase 20a, no console screen yet)
+
+Students chat with an AI tutor on the website. Administrators can review conversations; the console needs a screen for it. Routes (all `/admin/ai/tutor`, administrators only, content editors get 403):
+
+| Route | Purpose |
+|---|---|
+| `GET /sessions?flagged&thumbs_down&reviewed&exam_slug&limit&cursor` | Newest first. Row: `{id, user_email, exam_slug, title, message_count, blocked_replies, thumbs_down, created_at, reviewed_at, reviewed_by}`. `flagged=true` means a reply was refused by the safety checks. |
+| `GET /sessions/{id}` | The row plus `messages: [{id, role, text, created_at, was_helpful}]`. Opening one is written to the action log (`ai_tutor.session_viewed`), so say so on the screen. |
+| `POST /sessions/{id}/review` `{note?}` | Marks it read: `{id, reviewed_at, reviewed_by}` (`ai_tutor.session_reviewed`). |
+
+Add `ai_tutor_session` to the action-log "On" filter (it comes from `GET /admin/action-log/entity-types`, so it appears once a conversation has been opened). The AI controls screen also gains four policy values: `tutor_free_daily_units` (0 makes the tutor paid-only), `tutor_exam_daily_units`, `tutor_max_output_tokens`, `tutor_history_messages`.
+
 ## Part 2. Smaller gaps found while building the console
 
 ### Closed by backend phase 15 (branch `phase/15-fixes-and-small-gaps`): the console still has to use them
