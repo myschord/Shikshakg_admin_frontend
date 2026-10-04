@@ -103,7 +103,14 @@ Rules: the test must be published and belong to the exam; a day in the past cann
 | AI tutor moderation | No screen: no route to list or review tutor conversations. | Add with the AI tutor (website phase F8 is mocked too). |
 | Streak rule setting | Owner decision D2 is open; nothing to configure yet. | A setting once the rule is decided. |
 
+| Catalog reads are cached for 60 s | `GET /exam-categories`, `/exams/{slug}` and the syllabus answer `Cache-Control: public, max-age=60`, so a browser shows a stale list for a minute after staff change it. The console works around it with `no-cache` requests. | Keep the cache for students, but send `no-store` (or an ETag) to staff, or version the URL. |
+| No way to see or delete inactive exams, or delete anything in the catalog | The public list hides inactive exams and no `GET /admin/exams` exists, so the console cannot offer "hide from students" (it could not be undone). There are no delete routes for categories, exams, stages, subjects, topics or subtopics. | `GET /admin/exams` and `/admin/exam-categories` including inactive ones; delete or archive for unused nodes. |
+| Blueprint sections cannot be read back | `GET .../blueprints` returns totals only, not the sections, subjects or difficulty mix, so a new version is written from scratch. | Return sections in `BlueprintOut`. |
+| Taxonomy has no descriptions or Hindi names on read | `TaxonomySubjectOut` has only id, slug and name, so the console can rename but not edit descriptions or Hindi names. | Add `description` and `localized_names` to the taxonomy read. |
+| Syllabus order is lost on read | `GET /exams/{slug}/syllabus` groups topics by subject, but the order is stored per topic. The console shows them grouped, and saving rewrites the order as shown. | Return an `position` per topic, or a flat ordered list. |
+| Imported questions appear in the list a moment after the job says finished | The job page shows the records as done about half a second before `GET /admin/questions` lists them, which briefly shows an empty review queue. | Commit the question rows before the job counts, or mark the job finished after. |
+
 ## Part 3. Still to build on the console side
 
-- **A1 catalog editor.** The routes already exist (`/admin/exams`, stages, syllabus, taxonomy, prerequisites, blueprints). Not started; the menu shows Catalog as "Soon".
+- Nothing else is planned for the console: A0 to A8 and the catalog editor are all built.
 - Real-backend replay of `e2e/a8.spec.ts` once Part 1 ships.

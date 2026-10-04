@@ -18,6 +18,8 @@ export type RequestOptions = {
   auth?: "none" | "optional";
   /** Lets the request finish while the page is closing (progress heartbeats). */
   keepalive?: boolean;
+  /** "no-cache" makes the browser check with the server even when the response says it may be reused. */
+  cache?: RequestCache;
 };
 
 /** Fresh key for one user action (an order, an AI practice request). */
@@ -116,6 +118,7 @@ async function send(method: string, path: string, opts: RequestOptions, token: s
       body: opts.body === undefined ? undefined : isRaw ? (opts.body as FormData | Blob) : JSON.stringify(opts.body),
       signal: opts.signal,
       keepalive: opts.keepalive,
+      cache: opts.cache,
     });
   } catch (e) {
     if ((e as Error)?.name === "AbortError") throw e;

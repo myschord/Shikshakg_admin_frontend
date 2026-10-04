@@ -22,7 +22,7 @@ export const navGroups: NavGroup[] = [
     title: "Content",
     items: [
       { label: "Exam dates", href: "/exam-dates", icon: CalendarClock, roles: both, built: true },
-      { label: "Catalog", href: "/catalog", icon: Layers, roles: both, built: false },
+      { label: "Catalog", href: "/catalog", icon: Layers, roles: both, built: true },
       { label: "Question bank", href: "/questions", icon: Library, roles: both, built: true },
       { label: "Review queue", href: "/questions/review", icon: ListChecks, roles: both, built: true },
       { label: "Student reports", href: "/reports", icon: Flag, roles: both, built: true },

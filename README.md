@@ -9,7 +9,7 @@ Desktop first, usable on a tablet, not designed for phones.
 | Phase | What | State |
 |---|---|---|
 | A0 | Shell, staff sign-in, role-aware menu, table / form / dialog kit | Done |
-| A1 | Exam dates: add, edit draft, publish, correct, recheck, retire, stale queue | Done. Catalog editor (categories, exams, stages, syllabus, blueprints, prerequisites) is not built yet |
+| A1 | Exam dates: add, edit draft, publish, correct, recheck, retire, stale queue | Done, with the catalog editor: categories, exams, stages, syllabus per stage (weightages, order, shown-as names), the subject and topic tree, prerequisites, and blueprint versions |
 | A2 | Question bank, keyboard review queue, student reports, pools and aliases | Done. Question history and a staff action log viewer need backend routes that do not exist yet |
 | A3 | JSON imports and PDF extraction review | Done. Tested end to end with a generated PDF: upload, review beside the page, import, publish |
 | A4 | Papers and tests | Done. A paper becomes a published test a student can start; locked after first attempt, new version replaces it |

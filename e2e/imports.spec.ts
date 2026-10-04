@@ -84,8 +84,8 @@ test.describe("A3: JSON imports", () => {
     await expect(bad).toContainText(/subject/i);
     // The good ones wait in the review queue, not in front of students.
     const s = await session(editor);
-    const queue = await apiAs(s, "GET", "/admin/questions?exam=bpsc&status=in_review&limit=100");
-    expect(queue.items.length).toBe(3);
+    // The job page can say Finished a moment before the new questions appear in the list.
+    await expect.poll(async () => (await apiAs(s, "GET", "/admin/questions?exam=bpsc&status=in_review&limit=100")).items.length, { timeout: 15_000 }).toBe(3);
   });
 
   test("the sample file is offered", async ({ page, context }) => {
