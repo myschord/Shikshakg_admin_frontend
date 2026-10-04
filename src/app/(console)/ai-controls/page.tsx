@@ -1,5 +1,7 @@
-import ComingSoon from "@/components/kit/ComingSoon";
+import AiControlsScreen from "@/components/ai/AiControlsScreen";
+
+export const metadata = { title: "AI controls" };
 
 export default function Page() {
-  return <ComingSoon title="AI controls" phase="A7">AI policy, quotas and suspicious questions. Administrators only.</ComingSoon>;
+  return <AiControlsScreen />;
 }

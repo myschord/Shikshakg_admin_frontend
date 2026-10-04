@@ -15,7 +15,8 @@ Desktop first, usable on a tablet, not designed for phones.
 | A4 | Papers and tests | Done. A paper becomes a published test a student can start; locked after first attempt, new version replaces it |
 | A5 | Courses and video upload | Done. Build sections, chapters and lectures; upload an MP4, topics, notes and links; publish; a student can play a free lecture |
 | A6 | Commerce (admin role only) | Done. Products and prices, orders, refunds, give and take away access. Refund processing is tested with faked server answers, because it moves real money |
-| A7 to A8 | AI controls, new backend features | Planned (menu shows "Soon") |
+| A7 | AI controls (admin role only) | Done for the all-exams policy (every setting, checked, with a change list before saving) and the questions-to-double-check list. Per-exam policies need the backend to expose exam ids |
+| A8 | New backend features | Planned (menu shows "Soon") |
 
 ## Review queue keys
 

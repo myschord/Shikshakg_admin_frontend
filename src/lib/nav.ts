@@ -38,7 +38,7 @@ export const navGroups: NavGroup[] = [
     title: "Administration",
     items: [
       { label: "Commerce", href: "/commerce", icon: Wallet, roles: adminOnly, built: true },
-      { label: "AI controls", href: "/ai-controls", icon: Sparkles, roles: adminOnly, built: false },
+      { label: "AI controls", href: "/ai-controls", icon: Sparkles, roles: adminOnly, built: true },
       { label: "Users and roles", href: "/users", icon: UserCog, roles: adminOnly, built: false },
     ],
   },
