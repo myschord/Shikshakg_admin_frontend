@@ -231,7 +231,7 @@ export const mock = {
     async setStatus(id: string, status: CaStatus, note?: string) {
       const row = load().ca.find((x) => x.id === id) ?? fail(404, "item_not_found", "Item not found.");
       if (!CA_MOVES[row.status].includes(status)) fail(409, "invalid_transition", `An item that is ${row.status.replace("_", " ")} cannot move to ${status.replace("_", " ")}.`);
-      if (status === "published" && me().role !== "admin") fail(403, "forbidden", "Only an administrator can publish.");
+      if (status === "published" && me().role !== "admin") fail(403, "permission_denied", "Only an administrator can publish.");
       const before = { status: row.status };
       row.status = status;
       row.updated_at = new Date().toISOString();

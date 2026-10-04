@@ -72,7 +72,7 @@ Staff routes (the student route is `GET /current-affairs?exam_slug&from&topic_id
 
 `Item` = `{id, exam_slug, title, summary, source_name, source_url, published_on, importance: "low"|"medium"|"high", topic_ids: uuid[], status: "draft"|"in_review"|"published"|"retired", created_by, updated_at}`.
 
-Allowed moves (same table as `CA_MOVES` in `src/lib/api/a8.ts`): `draft → in_review`; `in_review → published | draft`; `published → retired`; `retired → draft`. An invalid move is `invalid_transition` (409). **Publishing is admin only** (`forbidden`, 403); editors write and send for review. Published items cannot be edited in place (`item_locked`, 409). Rules: title 1 to 200; summary 1 to 600; `source_url` starts with `https://`; `published_on` is not in the future; every `topic_id` belongs to the exam's syllabus. Audit: `current_affairs.created|updated|in_review|published|retired|draft`.
+Allowed moves (same table as `CA_MOVES` in `src/lib/api/a8.ts`): `draft → in_review`; `in_review → published | draft`; `published → retired`; `retired → draft`. An invalid move is `invalid_transition` (409). **Publishing is admin only** (`permission_denied`, 403); editors write and send for review. Published items cannot be edited in place (`item_locked`, 409). Rules: title 1 to 200; summary 1 to 600; `source_url` starts with `https://`; `published_on` is not in the future; every `topic_id` belongs to the exam's syllabus. Audit: `current_affairs.created|updated|in_review|published|retired|draft`.
 
 Open owner decision: who writes these every day (D4 in the plan).
 
@@ -90,24 +90,31 @@ Rules: the test must be published and belong to the exam; a day in the past cann
 
 ## Part 2. Smaller gaps found while building the console
 
+### Closed by backend phase 15 (branch `phase/15-fixes-and-small-gaps`): the console still has to use them
+
+| Was | Now | What the console changes |
+|---|---|---|
+| Commerce admin routes allowed editors | Admin only (403 `permission_denied` for editors) | Nothing; the menu already hides them. |
+| No exam UUID for the AI policy | `exam_slug` accepted on `GET` and `PUT /admin/ai/policy`; the answer carries `exam_slug` | Offer a per-exam policy on the AI controls screen (an exam picker, "in force for: this exam / all exams"). |
+| Admin test detail had no question list | `questions: [{position, question_id, section_id, status, preview, marks, negative_marks}]` on one test (null in the list) | Show the slots in the test view and let staff pick the slot to replace from it. |
+| No lecture delete | `DELETE /admin/lectures/{id}`: draft or archived only, and only if no student has progress, notes or bookmarks (409 `lecture_published`, `lecture_has_student_data` with counts) | A "Delete lecture" button on the lecture page, with the two refusals explained and "Archive instead". |
+| A rejected refund was stored as `failed` | Its own state, `rejected` (`GET /admin/refunds?status=rejected`) | Add `rejected: "Turned down"` to `REFUND_STATUS_LABEL`, a filter entry, and show the note. |
+| Catalog reads cached 60 s for staff | A request with a staff token gets `private, no-store` | The `cache: "no-cache"` workaround in `src/lib/api/catalog.ts` can go once the new backend is deployed. |
+| Inactive exams could not be listed | `GET /admin/exam-categories`, `GET /admin/exams`, `GET /admin/exams/{slug}` with `is_active` and `display_order` | Use them on the Exams tab and add a "Show to students" switch (`PATCH /admin/exams/{slug}` with `is_active`). |
+| Blueprint sections could not be read back | `GET .../blueprints/{version}` and the create answer return default marks and every section | "Start from this version" on the Blueprints tab. |
+| Taxonomy read lacked Hindi names and descriptions | `localized_names` on all three levels, `description` on topics; a description sent for a subject or subtopic is refused (`unsupported_field`) | Show and edit Hindi names; offer a description only for topics. The new-subject and new-subtopic dialogs must stop sending one. |
+| Syllabus order lost on read | Each topic carries `position` and `display_name` | Sort by `position`; stop inferring a shown-as name by comparing names. |
+
+### Still open
+
 | Gap | Where it shows | Suggested fix |
 |---|---|---|
-| Commerce admin routes only require staff | `/admin/products`, `orders`, `refunds`, `entitlements` use `StaffDep`. The console hides them from editors, but an editor can call them directly. | Use `AdminDep` on the commerce admin router, like the AI routes. |
-| No route returns an exam's UUID | `GET/PUT /admin/ai/policy` take `exam_id` (UUID); `ExamOut` has only a slug. The console therefore edits only the all-exams policy. | Accept `exam_slug` on the policy routes, or add `id` to `ExamOut`. |
-| Admin test detail has no question list | Replacing a question in a test is by position, blind. | Return `questions: [{position, question_id, preview}]` in `TestAdminOut`. |
-| No lecture delete | A chapter that holds lectures can never be removed. | `DELETE /admin/lectures/{id}` for a lecture with no student progress. |
+| No delete routes in the catalog | Categories, exams, stages, subjects, topics and subtopics cannot be deleted, so test and mistaken entries stay for good | Delete or archive for nodes nothing refers to. |
 | No upload progress or resumable upload | A 200 MB video upload is one request with no progress bar. | Presigned direct-to-S3 upload with multipart (planned with the AWS staging work). |
 | No video encoding | The MP4 itself plays. | HLS transcoding (planned with AWS). |
-| A rejected refund is stored as `failed` | `RefundStatus` is `requested, processing, processed, failed`. The reject route sets `failed` with the staff note, so a refusal looks the same as a Razorpay error in the Refunds list. | Add a `rejected` state and set it in the reject route. |
-| Staff dashboard numbers | The Today screen has no counts of new students, revenue, or open reports. | `GET /admin/dashboard/stats`. |
-| AI tutor moderation | No screen: no route to list or review tutor conversations. | Add with the AI tutor (website phase F8 is mocked too). |
-| Streak rule setting | Owner decision D2 is open; nothing to configure yet. | A setting once the rule is decided. |
-
-| Catalog reads are cached for 60 s | `GET /exam-categories`, `/exams/{slug}` and the syllabus answer `Cache-Control: public, max-age=60`, so a browser shows a stale list for a minute after staff change it. The console works around it with `no-cache` requests. | Keep the cache for students, but send `no-store` (or an ETag) to staff, or version the URL. |
-| No way to see or delete inactive exams, or delete anything in the catalog | The public list hides inactive exams and no `GET /admin/exams` exists, so the console cannot offer "hide from students" (it could not be undone). There are no delete routes for categories, exams, stages, subjects, topics or subtopics. | `GET /admin/exams` and `/admin/exam-categories` including inactive ones; delete or archive for unused nodes. |
-| Blueprint sections cannot be read back | `GET .../blueprints` returns totals only, not the sections, subjects or difficulty mix, so a new version is written from scratch. | Return sections in `BlueprintOut`. |
-| Taxonomy has no descriptions or Hindi names on read | `TaxonomySubjectOut` has only id, slug and name, so the console can rename but not edit descriptions or Hindi names. | Add `description` and `localized_names` to the taxonomy read. |
-| Syllabus order is lost on read | `GET /exams/{slug}/syllabus` groups topics by subject, but the order is stored per topic. The console shows them grouped, and saving rewrites the order as shown. | Return an `position` per topic, or a flat ordered list. |
+| Staff dashboard numbers | The Today screen has no counts of new students, revenue, or open reports. | `GET /admin/dashboard/stats` (phase 18). |
+| AI tutor moderation | No screen: no route to list or review tutor conversations. | Add with the AI tutor (phase 20). |
+| Streak rule setting | Owner decision D2 is open; nothing to configure yet. | A setting once the rule is decided (phase 16). |
 
 ## Part 3. Still to build on the console side
 
