@@ -13,6 +13,13 @@ Money amounts are decimal strings, times are ISO instants, dates are India calen
 - announcements: a link must be an **app path** (`/exams/bpsc/tests`); `https://` is refused. A new status `sending` appears between scheduled and sent: "send now" answers `sending`, and `recipients` and `read_count` arrive once it is `sent`. Unknown fields in the body are refused. Only administrators may use the routes.
 - daily quiz: the test must also be a **free preview** (`test_not_free`); swapping a day students have attempted is refused (`quiz_has_attempts`); list rows carry `test_status`; the student route answers 404 `no_daily_quiz` when none is set.
 
+**Update, backend phase 18** (branch `phase/18-staff-operations`, 2026-10-04): users and roles (section 1), the action log (section 2) and the home numbers now exist on the server. The console still runs the first two on sample data. Where the real routes differ from the sample data, the real behaviour wins:
+
+- **the blocked state is `suspended`**, not "disabled", and the status route accepts only `active` and `suspended` (409 `status_not_changeable` for anything else, including an unverified or anonymised account). User rows also carry `email_verified`. The list takes `q`, `role` and `status`.
+- **errors:** `cannot_change_own_role`, `cannot_suspend_self`, `role_unchanged`, `status_unchanged`, `last_admin`, `account_anonymized`, `email_taken`, `user_not_found`; a reason is required (422 when blank).
+- **the log:** filters are `actor_email`, `action_prefix`, `entity_type`, `entity_id`, `from`, `to` (India dates, both included); each entry has `at` (not a separate date and time) and `actor_email` is null for an operator command. Fill the "On" filter from `GET /admin/action-log/entity-types` instead of the fixed list: the real values include `exam_paper`, `pdf_document`, `pyq_pool`, `exam_blueprint` and have no `paper` or `current_affairs`. Values whose names look secret show as `[hidden]`.
+- **the Today numbers:** `GET /admin/dashboard/stats` returns `students {active, joined_this_week, seen_this_week}`, `content {questions_in_review, open_reports, stale_exam_dates}` and `commerce {orders_this_week, revenue_this_week, refunds_waiting}` (null for editors).
+
 | Screen | Who may use it | Status in the console |
 |---|---|---|
 | Users and roles | admin | Built on sample data |
