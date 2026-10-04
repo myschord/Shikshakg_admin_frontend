@@ -86,7 +86,18 @@ Staff routes (the student route is `GET /current-affairs?exam_slug&from&topic_id
 
 Allowed moves (same table as `CA_MOVES` in `src/lib/api/a8.ts`): `draft → in_review`; `in_review → published | draft`; `published → retired`; `retired → draft`. An invalid move is `invalid_transition` (409). **Publishing is admin only** (`permission_denied`, 403); editors write and send for review. Published items cannot be edited in place (`item_locked`, 409). Rules: title 1 to 200; summary 1 to 600; `source_url` starts with `https://`; `published_on` is not in the future; every `topic_id` belongs to the exam's syllabus. Audit: `current_affairs.created|updated|in_review|published|retired|draft`.
 
-Open owner decision: who writes these every day (D4 in the plan).
+**Built (phase 19). The real routes differ from the sample data in these ways:**
+
+- `importance` is a number, `1`, `2` or `3` (3 matters most), not `low|medium|high`.
+- One item can be for several exams: send `exam_slugs` (1 to 10, no repeats), not `exam_slug`. The list route still filters by one `exam_slug`.
+- The text is a `translations` array of `{language: "en"|"hi", headline, summary}`: English is required, Hindi optional, a language at most once. `headline` is 1 to 200, `summary` 1 to 600. There is no `title`.
+- One optional `topic_id`, not `topic_ids`. It must be in the syllabus of one of the exams chosen (409 `topic_not_in_exam`; 404 `topic_not_found`). Unknown exam is 404 `exam_not_found`; a future `published_on` is 400 `published_on_in_future`.
+- The body for create and edit is the same: `{exam_slugs, importance, source_name, source_url, published_on, topic_id?, translations}`. Unknown fields are refused (422).
+- An item answers `{id, exam_slugs, importance, topic: {id, name}|null, source_name, source_url, published_on, status, translations[], created_by (email), published_at, updated_at}`.
+- Publishing needs English text (409 `english_required`). The `note` on a move is optional.
+- Student route `GET /current-affairs` needs a signed-in student, `exam_slug` is required, `from` is an India date (included), `importance` is exact. It answers `{items, next_cursor, has_more}`, newest news first, each item in the student's language when it has it, else English.
+
+Open owner decision: who writes these every day (D4 in the plan). Built on the default: editors write and send for review, administrators publish and retire.
 
 ### 5. Daily quiz schedule
 
