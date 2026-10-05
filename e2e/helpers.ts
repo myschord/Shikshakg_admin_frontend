@@ -67,6 +67,15 @@ export async function createStaff(role: "admin" | "content_editor"): Promise<Acc
   return activate(first, since, email, role);
 }
 
+/** A new student account of its own (for tests that change the account). Sign-ups are rate limited, so use sparingly. */
+export async function freshStudent(): Promise<Account> {
+  const first = `T${uniq()}`;
+  const email = `student-${first.toLowerCase()}@example.com`;
+  const since = new Date(Date.now() - 2000);
+  await json("/auth/register", { method: "POST", body: JSON.stringify({ full_name: `${first} Student`, email, accept_terms: true }) });
+  return activate(first, since, email, "student");
+}
+
 /** An ordinary student account. Sign-ups are rate limited, so tests share one. */
 let student: Promise<Account> | null = null;
 export const sharedStudent = () =>

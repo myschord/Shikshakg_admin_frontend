@@ -6,10 +6,9 @@ import DataTable, { type Column } from "@/components/kit/DataTable";
 import Dialog from "@/components/kit/Dialog";
 import ErrorState from "@/components/kit/ErrorState";
 import Field, { inputClass } from "@/components/kit/Field";
-import MockBanner from "@/components/kit/MockBanner";
 import type { LogEntry } from "@/lib/api/a8";
 import { formatDay, istDay } from "@/lib/date";
-import { useLog } from "@/lib/hooks/useA8";
+import { useEntityTypes, useLog } from "@/lib/hooks/useA8";
 
 const time = (iso: string) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true }).format(new Date(iso));
 /** "courses.lecture_updated" read as "Courses: lecture updated". */
@@ -18,7 +17,8 @@ const words = (action: string) => {
   const what = rest.join(" ").replace(/_/g, " ");
   return `${area[0].toUpperCase()}${area.slice(1).replace(/_/g, " ")}: ${what}`;
 };
-const ENTITY_TYPES = ["announcement", "course", "current_affairs", "daily_quiz", "entitlement", "exam_event", "lecture", "paper", "product", "question", "refund", "test", "user", "ai_policy"];
+/** Who did it: an operator command from the command line has no account. */
+const who = (email: string | null) => email ?? "Operator (command line)";
 
 /** What staff changed, who did it and when, with the values before and after. Read only. */
 export default function ActionLogScreen() {
@@ -28,11 +28,12 @@ export default function ActionLogScreen() {
   const [applied, setApplied] = useState({ actor: "", action: "" });
   const list = useLog({ actor: applied.actor || undefined, action: applied.action || undefined, entityType: entity || undefined });
   const rows = useMemo(() => list.data?.items ?? [], [list.data]);
+  const entityTypes = useEntityTypes();
   const [open, setOpen] = useState<LogEntry | null>(null);
 
   const columns: Column<LogEntry>[] = [
     { key: "t", header: "When", cell: (l) => <span className="whitespace-nowrap">{formatDay(istDay(l.at))}, {time(l.at)}</span> },
-    { key: "a", header: "Who", cell: (l) => <span className="break-all">{l.actor_email}</span> },
+    { key: "a", header: "Who", cell: (l) => <span className="break-all">{who(l.actor_email)}</span> },
     { key: "w", header: "What", cell: (l) => words(l.action) },
     { key: "e", header: "On", cell: (l) => <><span className="capitalize">{l.entity_type.replace(/_/g, " ")}</span><span className="block font-mono text-xs text-ink-muted">{l.entity_id.slice(0, 12)}</span></> },
     {
@@ -40,7 +41,7 @@ export default function ActionLogScreen() {
       header: "Details",
       cell: (l) => (
         <Button variant="secondary" className="!min-h-[36px] !px-3" onClick={() => setOpen(l)}>
-          Open<span className="sr-only"> {words(l.action)} by {l.actor_email}</span>
+          Open<span className="sr-only"> {words(l.action)} by {who(l.actor_email)}</span>
         </Button>
       ),
     },
@@ -52,7 +53,6 @@ export default function ActionLogScreen() {
         <h1 className="text-2xl font-extrabold">Action log</h1>
         <p className="mt-1 text-sm text-ink-muted">Every change staff make, newest first. Times are India time.</p>
       </div>
-      <MockBanner what="a route to read the action log (the log itself is already recorded)" />
       <form
         className="flex flex-wrap items-end gap-4"
         onSubmit={(e) => {
@@ -66,7 +66,7 @@ export default function ActionLogScreen() {
           {(p) => (
             <select {...p} value={entity} onChange={(e) => setEntity(e.target.value)} className={inputClass}>
               <option value="">Anything</option>
-              {ENTITY_TYPES.map((t) => (
+              {(entityTypes.data ?? []).map((t) => (
                 <option key={t} value={t}>
                   {t.replace(/_/g, " ")}
                 </option>
@@ -83,7 +83,7 @@ export default function ActionLogScreen() {
         {open && (
           <div className="space-y-4 text-sm">
             <p>
-              <strong>{words(open.action)}</strong> by <span className="break-all">{open.actor_email}</span>, {formatDay(istDay(open.at))} at {time(open.at)}.
+              <strong>{words(open.action)}</strong> by <span className="break-all">{who(open.actor_email)}</span>, {formatDay(istDay(open.at))} at {time(open.at)}.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Values title="Before" value={open.before} />

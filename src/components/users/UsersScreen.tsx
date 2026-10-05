@@ -9,8 +9,7 @@ import DataTable, { type Column } from "@/components/kit/DataTable";
 import Dialog from "@/components/kit/Dialog";
 import ErrorState from "@/components/kit/ErrorState";
 import Field, { inputClass } from "@/components/kit/Field";
-import MockBanner from "@/components/kit/MockBanner";
-import { ROLE_LABEL, type Role, type UserRow } from "@/lib/api/a8";
+import { ROLE_LABEL, USER_STATUS_LABEL, type Role, type UserRow } from "@/lib/api/a8";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { formatDay, istDay } from "@/lib/date";
 import { useUserMutations, useUsers } from "@/lib/hooks/useA8";
@@ -46,7 +45,7 @@ export default function UsersScreen() {
       ),
     },
     { key: "r", header: "Role", cell: (u) => <Badge tone={u.role === "admin" ? "warning" : u.role === "content_editor" ? "info" : "neutral"}>{ROLE_LABEL[u.role]}</Badge> },
-    { key: "s", header: "Account", cell: (u) => <Badge tone={u.status === "active" ? "success" : "neutral"}>{u.status === "active" ? "Active" : "Switched off"}</Badge> },
+    { key: "s", header: "Account", cell: (u) => <Badge tone={u.status === "active" ? "success" : u.status === "suspended" ? "warning" : "neutral"}>{USER_STATUS_LABEL[u.status]}</Badge> },
     { key: "l", header: "Last sign-in", cell: (u) => <span className="whitespace-nowrap">{day(u.last_login_at)}</span> },
     { key: "c", header: "Joined", cell: (u) => <span className="whitespace-nowrap">{day(u.created_at)}</span> },
     {
@@ -60,10 +59,12 @@ export default function UsersScreen() {
             <Button variant="secondary" className="!min-h-[36px] !px-3" onClick={() => setAct({ kind: "role", user: u })}>
               Change role<span className="sr-only"> of {u.full_name}</span>
             </Button>
-            <Button variant="ghost" className="!min-h-[36px] !px-3" onClick={() => setAct({ kind: "status", user: u })}>
-              {u.status === "active" ? "Switch off" : "Switch on"}
-              <span className="sr-only"> account of {u.full_name}</span>
-            </Button>
+            {(u.status === "active" || u.status === "suspended") && (
+              <Button variant="ghost" className="!min-h-[36px] !px-3" onClick={() => setAct({ kind: "status", user: u })}>
+                {u.status === "active" ? "Suspend" : "Restore"}
+                <span className="sr-only"> account of {u.full_name}</span>
+              </Button>
+            )}
           </div>
         ),
     },
@@ -74,13 +75,12 @@ export default function UsersScreen() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold">Users and roles</h1>
-          <p className="mt-1 text-sm text-ink-muted">Find someone, change what they can do, or switch their account off. Every change is written to the action log with your reason.</p>
+          <p className="mt-1 text-sm text-ink-muted">Find someone, change what they can do, or suspend their account. Every change is written to the action log with your reason.</p>
         </div>
         <Button onClick={() => setInviting(true)} icon={<UserPlus className="h-4 w-4" aria-hidden />}>
           Add staff
         </Button>
       </div>
-      <MockBanner what="user management routes" />
       <form
         className="flex flex-wrap items-end gap-4"
         onSubmit={(e) => {
@@ -128,7 +128,7 @@ function ActionDialog({ act, onClose }: { act: { kind: "role" | "status"; user: 
   }, [act]);
   if (!act) return <Dialog open={false} title="" onClose={onClose}>{null}</Dialog>;
   const isRole = act.kind === "role";
-  const next = act.user.status === "active" ? "disabled" : "active";
+  const next = act.user.status === "active" ? "suspended" : "active";
   const mut = isRole ? setRole : setStatus;
 
   async function submit(e: React.FormEvent) {
@@ -139,18 +139,18 @@ function ActionDialog({ act, onClose }: { act: { kind: "role" | "status"; user: 
     try {
       if (isRole) await setRole.mutateAsync({ id: act.user.id, role, reason: reason.trim() });
       else await setStatus.mutateAsync({ id: act.user.id, status: next, reason: reason.trim() });
-      toast.success(isRole ? "Role changed." : next === "disabled" ? "Account switched off." : "Account switched on.");
+      toast.success(isRole ? "Role changed." : next === "suspended" ? "Account suspended." : "Account restored.");
       onClose();
     } catch {}
   }
 
   return (
-    <Dialog open title={isRole ? "Change role" : next === "disabled" ? "Switch off this account" : "Switch on this account"} onClose={onClose} busy={mut.isPending} role="alertdialog">
+    <Dialog open title={isRole ? "Change role" : next === "suspended" ? "Suspend this account" : "Restore this account"} onClose={onClose} busy={mut.isPending} role="alertdialog">
       <form onSubmit={submit} noValidate className="space-y-4">
         <p className="rounded-lg bg-bg-tint px-3 py-2 text-sm">
           <strong>{act.user.full_name}</strong>
           <span className="block break-all">{act.user.email}</span>
-          Now: {ROLE_LABEL[act.user.role]}, {act.user.status === "active" ? "active" : "switched off"}
+          Now: {ROLE_LABEL[act.user.role]}, {USER_STATUS_LABEL[act.user.status].toLowerCase()}
         </p>
         {isRole ? (
           <Field label="New role" required help={ROLE_HELP[role]}>
@@ -165,7 +165,7 @@ function ActionDialog({ act, onClose }: { act: { kind: "role" | "status"; user: 
             )}
           </Field>
         ) : (
-          <p className="text-sm">{next === "disabled" ? "They are signed out and cannot sign in until you switch the account back on. Their data is kept." : "They can sign in again."}</p>
+          <p className="text-sm">{next === "suspended" ? "They are signed out and cannot sign in or refresh until you restore the account. Their data is kept." : "They can sign in again with their password."}</p>
         )}
         <Field label="Reason" required error={err} help="Kept in the action log.">{(p) => <input {...p} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} className={inputClass} />}</Field>
         {mut.error ? <ErrorState compact error={mut.error} /> : null}
@@ -174,7 +174,7 @@ function ActionDialog({ act, onClose }: { act: { kind: "role" | "status"; user: 
             Cancel
           </Button>
           <Button type="submit" variant={isRole || next === "active" ? "primary" : "danger"} loading={mut.isPending}>
-            {isRole ? "Change role" : next === "disabled" ? "Switch off" : "Switch on"}
+            {isRole ? "Change role" : next === "suspended" ? "Suspend" : "Restore"}
           </Button>
         </div>
       </form>

@@ -10,7 +10,6 @@ import Dialog from "@/components/kit/Dialog";
 import ErrorState from "@/components/kit/ErrorState";
 import ExamSelect from "@/components/kit/ExamSelect";
 import Field, { inputClass } from "@/components/kit/Field";
-import MockBanner from "@/components/kit/MockBanner";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { QuizDay } from "@/lib/api/a8";
 import { formatDay, todayIst } from "@/lib/date";
@@ -81,7 +80,6 @@ export default function DailyQuizScreen() {
         <h1 className="text-2xl font-extrabold">Daily quiz</h1>
         <p className="mt-1 text-sm text-ink-muted">Pick the published test students see as the quiz of each day. The day changes at midnight India time.</p>
       </div>
-      <MockBanner what="daily quiz scheduling routes" />
       <Field label="Exam" className="max-w-sm">{(p) => <ExamSelect {...p} value={exam ?? ""} onChange={setChosen} />}</Field>
       {gaps.length > 0 && !q.isPending && !q.isError && (
         <p role="note" className="rounded-xl border border-warning bg-warning-tint p-3 text-sm">

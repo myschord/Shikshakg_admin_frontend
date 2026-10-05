@@ -1,10 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { apiAs, createStaff, firstTopic, horizontalOverflow, newSession, signIn, type Account } from "./helpers";
+import { apiAs, createStaff, firstTopic, freshStudent, horizontalOverflow, newSession, signIn, type Account } from "./helpers";
 
-// These screens run on sample data kept in the browser (the backend has no routes for them yet), so every test
-// starts from a fresh browser context and the same seed. The daily quiz picker also lists real published tests.
+// These screens run on the real backend. Every test makes its own records (names carry a unique tag), so reruns
+// against the same database do not collide; the daily quiz screen shares one calendar, so its test only touches
+// days after today.
 const EXAM = "bpsc";
+const tag = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 4);
 let admin: Account;
 let editor: Account;
 const cache = new Map<string, { at: number; session: Account }>();
@@ -23,33 +25,41 @@ test.beforeAll(async () => {
 
 const row = (page: Page, text: string | RegExp) => page.locator("tr", { hasText: text });
 
-test.describe("A8: users and roles, and the action log (sample data)", () => {
-  test("search, change a role, switch off an account, add staff; each change is logged", async ({ page, context }) => {
+test.describe("A8: users and roles, and the action log", () => {
+  test("search, change a role, suspend and restore an account, add staff; each change is logged", async ({ page, context }) => {
+    test.setTimeout(120_000);
+    const person = await freshStudent();
     await signIn(context, await session(admin));
     await page.goto("/users");
-    await expect(page.getByRole("note")).toContainText("Sample data");
+    await expect(page.getByText(/sample data/i)).toHaveCount(0);
     await expect(row(page, admin.email)).toContainText("You");
     await expect(row(page, admin.email).getByRole("button")).toHaveCount(0);
 
-    await page.getByLabel("Name or email").fill("diya");
+    await page.getByLabel("Name or email").fill(person.email);
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page.locator("tbody tr")).toHaveCount(1);
-    await row(page, "Diya Sharma").getByRole("button", { name: /^Change role/ }).click();
+    await expect(row(page, person.email)).toContainText("Student");
+    await expect(row(page, person.email)).toContainText("Active");
+    await row(page, person.email).getByRole("button", { name: /^Change role/ }).click();
     const d = page.getByRole("alertdialog");
     await d.getByLabel("New role").selectOption("content_editor");
     await d.getByRole("button", { name: "Change role" }).click();
     await expect(d.getByText("Say why. It is kept in the action log.")).toBeVisible();
     await d.getByLabel(/^Reason/).fill("joins the content team");
     await d.getByRole("button", { name: "Change role" }).click();
-    await expect(row(page, "Diya Sharma")).toContainText("Content editor");
+    await expect(row(page, person.email)).toContainText("Content editor");
 
-    await page.getByLabel("Name or email").fill("kabir");
-    await page.getByRole("button", { name: "Search" }).click();
-    await row(page, "Kabir Mehta").getByRole("button", { name: /^Switch off/ }).click();
-    await page.getByRole("alertdialog").getByLabel(/^Reason/).fill("asked to close the account");
-    await page.getByRole("alertdialog").getByRole("button", { name: "Switch off" }).click();
-    await expect(row(page, "Kabir Mehta")).toContainText("Switched off");
+    await row(page, person.email).getByRole("button", { name: /^Suspend/ }).click();
+    await page.getByRole("alertdialog").getByLabel(/^Reason/).fill("asked to pause the account");
+    await page.getByRole("alertdialog").getByRole("button", { name: "Suspend" }).click();
+    await expect(row(page, person.email)).toContainText("Suspended");
+    await row(page, person.email).getByRole("button", { name: /^Restore/ }).click();
+    await page.getByRole("alertdialog").getByLabel(/^Reason/).fill("back from leave");
+    await page.getByRole("alertdialog").getByRole("button", { name: "Restore" }).click();
+    await expect(row(page, person.email)).toContainText("Active");
 
+    const name = `Tara ${tag()}`;
+    const fresh = `tara-${tag()}@example.com`;
     await page.getByLabel("Name or email").fill("");
     await page.getByRole("button", { name: "Search" }).click();
     await page.getByRole("button", { name: "Add staff" }).click();
@@ -57,20 +67,25 @@ test.describe("A8: users and roles, and the action log (sample data)", () => {
     await inv.getByRole("button", { name: "Create account" }).click();
     await expect(inv.getByText("Enter their name.")).toBeVisible();
     await expect(inv.getByText("Enter a valid email address.")).toBeVisible();
-    await inv.getByLabel(/^Full name/).fill("Tara Newhire");
-    await inv.getByLabel(/^Email/).fill("rohan.editor@example.com");
+    await inv.getByLabel(/^Full name/).fill(name);
+    await inv.getByLabel(/^Email/).fill(editor.email);
     await inv.getByRole("button", { name: "Create account" }).click();
     await expect(inv.getByText(/already exists/)).toBeVisible();
-    await inv.getByLabel(/^Email/).fill("tara.new@example.com");
+    await inv.getByLabel(/^Email/).fill(fresh);
     await inv.getByRole("button", { name: "Create account" }).click();
-    await expect(row(page, "Tara Newhire")).toContainText("Content editor");
+    await page.getByLabel("Name or email").fill(fresh);
+    await page.getByRole("button", { name: "Search" }).click();
+    await expect(row(page, fresh)).toContainText("Content editor");
+    await expect(row(page, fresh)).toContainText("Not activated yet");
+    await expect(row(page, fresh).getByRole("button", { name: /^Suspend|^Restore/ })).toHaveCount(0); // not a staff decision yet
 
-    // The log, on another screen, shows all three, with before and after.
+    // The log, on another screen, shows the changes with before and after.
     await page.goto("/action-log");
-    await expect(row(page, "Users: role changed")).toBeVisible();
-    await expect(row(page, "Users: disabled")).toBeVisible();
-    await expect(row(page, "Users: staff invited")).toBeVisible();
-    await row(page, "Users: role changed").getByRole("button", { name: /^Open/ }).click();
+    await page.getByLabel("What starts with").fill("users.");
+    await page.getByLabel("Who (email)").fill(admin.email);
+    await page.getByRole("button", { name: "Filter" }).click();
+    for (const what of ["Users: role changed", "Users: suspended", "Users: reactivated", "Users: staff invited"]) await expect(row(page, what).first()).toBeVisible();
+    await row(page, "Users: role changed").first().getByRole("button", { name: /^Open/ }).click();
     const dlg = page.getByRole("dialog");
     await expect(dlg.getByRole("region", { name: "Before" })).toContainText("student");
     await expect(dlg.getByRole("region", { name: "After" })).toContainText("content_editor");
@@ -78,20 +93,27 @@ test.describe("A8: users and roles, and the action log (sample data)", () => {
     await dlg.getByRole("button", { name: "Close", exact: true }).last().click();
   });
 
-  test("the log filters by person and by what it starts with", async ({ page, context }) => {
+  test("the log filters by person, by what it starts with and by kind of record", async ({ page, context }) => {
+    await apiAs(await session(admin), "POST", "/admin/staff", { email: `log-${tag()}@example.com`, full_name: `Log ${tag()}`, role: "content_editor" });
     await signIn(context, await session(admin));
     await page.goto("/action-log");
     await expect(page.locator("tbody tr").first()).toBeVisible();
-    const all = await page.locator("tbody tr").count();
-    expect(all).toBeGreaterThan(5);
-    await page.getByLabel("Who (email)").fill("sana");
+    await expect(page.getByText(/sample data/i)).toHaveCount(0);
+
+    await page.getByLabel("Who (email)").fill(admin.email);
     await page.getByRole("button", { name: "Filter" }).click();
-    await expect(page.locator("tbody tr").first()).toContainText("sana.editor@example.com");
-    await expect.poll(() => page.locator("tbody tr").count()).toBeLessThan(all);
+    await expect(page.locator("tbody tr").first()).toContainText(admin.email);
+    for (const t of await page.locator("tbody tr").allInnerTexts()) expect(t).toContain(admin.email);
+
     await page.getByLabel("Who (email)").fill("");
-    await page.getByLabel("What starts with").fill("commerce");
+    await page.getByLabel("On").selectOption("user"); // the kinds offered are the ones that exist
     await page.getByRole("button", { name: "Filter" }).click();
-    for (const t of await page.locator("tbody tr").allInnerTexts()) expect(t.toLowerCase()).toContain("commerce");
+    for (const t of await page.locator("tbody tr").allInnerTexts()) expect(t.toLowerCase()).toContain("user");
+
+    await page.getByLabel("On").selectOption("");
+    await page.getByLabel("What starts with").fill("users.");
+    await page.getByRole("button", { name: "Filter" }).click();
+    for (const t of await page.locator("tbody tr").allInnerTexts()) expect(t.toLowerCase()).toContain("users");
     await page.getByLabel("What starts with").fill("nothing-like-this");
     await page.getByRole("button", { name: "Filter" }).click();
     await expect(page.getByText("Nothing matches")).toBeVisible();
@@ -110,19 +132,22 @@ test.describe("A8: users and roles, and the action log (sample data)", () => {
   });
 });
 
-test.describe("A8: announcements (sample data)", () => {
-  test("write, check, schedule, send and cancel", async ({ page, context }) => {
+test.describe("A8: announcements", () => {
+  test("write, check, send, schedule and cancel", async ({ page, context }) => {
+    test.setTimeout(120_000);
+    const t = tag();
+    const title = `E2E new batch ${t}`;
+    const later = `E2E maintenance ${t}`;
     await signIn(context, await session(admin));
     await page.goto("/announcements");
-    await expect(row(page, "New mock tests this week")).toContainText("Sent");
-    await expect(row(page, "New mock tests this week").getByRole("button")).toHaveCount(0);
+    await expect(page.getByText(/sample data/i)).toHaveCount(0);
 
     await page.getByRole("button", { name: "New announcement" }).click();
     const d = page.getByRole("dialog");
     await d.getByRole("button", { name: "Save draft" }).click();
     await expect(d.getByText("Enter a title.")).toBeVisible();
     await expect(d.getByText("Write the message.")).toBeVisible();
-    await d.getByLabel(/^Title/).fill("E2E new batch");
+    await d.getByLabel(/^Title/).fill(title);
     await d.getByLabel(/^Message/).fill("A new batch starts on Monday.");
     await d.getByLabel(/^Where tapping it goes/).fill("not a link");
     await d.getByLabel(/^Send at/).fill("2020-01-01T10:00");
@@ -134,31 +159,47 @@ test.describe("A8: announcements (sample data)", () => {
     await d.getByLabel("Send to").selectOption(EXAM);
     await d.getByRole("checkbox", { name: /push notification/ }).check();
     await d.getByRole("button", { name: "Save draft" }).click();
-    await expect(row(page, "E2E new batch")).toContainText("Draft");
-    await expect(row(page, "E2E new batch")).toContainText("Push too");
-    await expect(row(page, "E2E new batch")).toContainText(`Students of ${EXAM}`);
+    await expect(row(page, title)).toContainText("Draft");
+    await expect(row(page, title)).toContainText("Push too");
+    await expect(row(page, title)).toContainText(`Students of ${EXAM}`);
 
-    await row(page, "E2E new batch").getByRole("button", { name: /^Send now/ }).click();
+    await row(page, title).getByRole("button", { name: /^Send now/ }).click();
     await expect(page.getByRole("alertdialog")).toContainText("cannot be taken back");
     await page.getByRole("alertdialog").getByRole("button", { name: "Send now" }).click();
-    await expect(row(page, "E2E new batch")).toContainText("Sent");
-    await expect(row(page, "E2E new batch")).toContainText("420");
-    await expect(row(page, "E2E new batch").getByRole("button")).toHaveCount(0);
+    await expect(row(page, title)).toContainText("Sent");
+    await expect(row(page, title).getByRole("button")).toHaveCount(0);
 
-    await row(page, "Maintenance on Sunday").getByRole("button", { name: /^Cancel/ }).click();
+    // A scheduled one can be cancelled before it goes.
+    await page.getByRole("button", { name: "New announcement" }).click();
+    const d2 = page.getByRole("dialog");
+    await d2.getByLabel(/^Title/).fill(later);
+    await d2.getByLabel(/^Message/).fill("Maintenance on Sunday morning.");
+    const when = new Date(Date.now() + 2 * 24 * 3600_000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    await d2.getByLabel(/^Send at/).fill(`${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}T10:00`);
+    await d2.getByRole("button", { name: "Schedule" }).click();
+    await expect(row(page, later)).toContainText("Scheduled");
+    await row(page, later).getByRole("button", { name: /^Cancel/ }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Cancel announcement" }).click();
-    await expect(row(page, "Maintenance on Sunday")).toContainText("Cancelled");
+    await expect(row(page, later)).toContainText("Cancelled");
 
     await page.goto("/action-log");
-    await expect(row(page, "Announcements: sent")).toBeVisible();
-    await expect(row(page, "Announcements: cancelled")).toBeVisible();
+    await page.getByLabel("What starts with").fill("announcements.");
+    await page.getByLabel("Who (email)").fill(admin.email);
+    await page.getByRole("button", { name: "Filter" }).click();
+    await expect(row(page, "Announcements: sent").first()).toBeVisible();
+    await expect(row(page, "Announcements: cancelled").first()).toBeVisible();
   });
 });
 
-test.describe("A8: current affairs (sample data)", () => {
-  test("write, send for review, publish and retire; an editor cannot publish", async ({ page, context, browser }) => {
+test.describe("A8: current affairs", () => {
+  test("write, send for review, publish and retire; an editor cannot publish or retire", async ({ page, context, browser }) => {
+    test.setTimeout(120_000);
+    const t = tag();
+    const headline = `E2E state announces new scheme ${t}`;
     await signIn(context, await session(admin));
     await page.goto("/current-affairs");
+    await expect(page.getByText(/sample data/i)).toHaveCount(0);
     await page.getByRole("button", { name: "New item" }).click();
     const d = page.getByRole("dialog");
     await d.getByRole("button", { name: "Save draft" }).click();
@@ -166,17 +207,27 @@ test.describe("A8: current affairs (sample data)", () => {
     await expect(d.getByText("Write a short summary.")).toBeVisible();
     await expect(d.getByText("Name the source, for example PIB.")).toBeVisible();
     await expect(d.getByText("Enter the source link, starting with https://.")).toBeVisible();
-    await d.getByLabel("Exam").selectOption(EXAM);
-    await d.getByLabel(/^Headline/).fill("E2E state announces new scheme");
+    await d.getByLabel("Exam", { exact: true }).selectOption(EXAM);
+    await d.getByLabel(/^Headline/).fill(headline);
     await d.getByLabel(/^Summary/).fill("The state announced a scheme for aspirants.");
     await d.getByLabel(/^Source name/).fill("PIB");
     await d.getByLabel(/^Source link/).fill("http://insecure.example");
     await d.getByRole("button", { name: "Save draft" }).click();
     await expect(d.getByText("Enter the source link, starting with https://.")).toBeVisible();
     await d.getByLabel(/^Source link/).fill("https://pib.gov.in/x");
+    await d.getByLabel("Importance").selectOption("3");
+    await d.getByRole("group", { name: /also for these exams/i }).getByRole("checkbox").first().check();
+    // A Hindi version needs both its headline and its summary.
+    await d.getByText("Hindi version (optional)").click();
+    await d.getByLabel("Hindi headline").fill("राज्य ने नई योजना घोषित की");
     await d.getByRole("button", { name: "Save draft" }).click();
-    const r = row(page, "E2E state announces new scheme");
+    await expect(d.getByText("Write both the Hindi headline and summary, or leave both empty.")).toBeVisible();
+    await d.getByLabel("Hindi summary").fill("राज्य ने अभ्यर्थियों के लिए एक योजना घोषित की।");
+    await d.getByRole("button", { name: "Save draft" }).click();
+    const r = row(page, headline);
     await expect(r).toContainText("Draft");
+    await expect(r).toContainText("Must know");
+    await expect(r).toContainText("Hindi added");
     await expect(r.getByRole("button", { name: /^Publish/ })).toHaveCount(0); // a draft goes to review first
 
     await r.getByRole("button", { name: /^Send for review/ }).click();
@@ -191,12 +242,22 @@ test.describe("A8: current affairs (sample data)", () => {
     await page.getByRole("alertdialog").getByRole("button", { name: "Retire" }).click();
     await expect(r).toContainText("Retired");
 
-    // An editor sees "Send for review" on the same kind of item, but no Publish button.
+    // An editor writes and sends for review, but sees no Publish and no Retire.
+    const mine = `E2E editor draft ${t}`;
+    const item = await apiAs(await session(editor), "POST", "/admin/current-affairs", {
+      exam_slugs: [EXAM],
+      importance: 2,
+      source_name: "PIB",
+      source_url: "https://pib.gov.in/y",
+      published_on: new Date().toISOString().slice(0, 10),
+      translations: [{ language: "en", headline: mine, summary: "Written by an editor." }],
+    });
+    await apiAs(await session(editor), "POST", `/admin/current-affairs/${item.id}/status`, { status: "in_review" });
     const ctx2 = await browser.newContext();
     const p2 = await ctx2.newPage();
     await signIn(ctx2, await session(editor));
     await p2.goto("/current-affairs");
-    const seeded = row(p2, "Kosi flood preparedness plan reviewed");
+    const seeded = row(p2, mine);
     await expect(seeded).toContainText("In review");
     await expect(seeded.getByRole("button", { name: /^Publish/ })).toHaveCount(0);
     await expect(seeded.getByRole("button", { name: /^Back to draft/ })).toBeVisible();
@@ -238,7 +299,7 @@ test.afterAll(async () => {
   for (const id of made.questions) await apiAs(s, "POST", `/admin/questions/${id}/status`, { status: "retired", note: "e2e cleanup" }).catch(() => {});
 });
 
-test.describe("A8: daily quiz (sample schedule, real tests)", () => {
+test.describe("A8: daily quiz", () => {
   test("choose a published test for a day, change it, and the rules are explained", async ({ page, context }) => {
     test.setTimeout(180_000);
     const tag = Date.now().toString(36);
@@ -247,21 +308,30 @@ test.describe("A8: daily quiz (sample schedule, real tests)", () => {
     await signIn(context, await session(editor));
     await page.goto("/daily-quiz");
     await page.getByLabel("Exam").selectOption(EXAM);
-    await expect(page.getByRole("note").filter({ hasText: /No quiz is set for/ })).toBeVisible();
+    await expect(page.getByText(/sample data/i)).toHaveCount(0);
 
-    const today = page.locator("tr", { hasText: "Today" });
-    await expect(today.getByRole("button", { name: /^Remove/ })).toHaveCount(0); // today's quiz cannot be taken away
-    await today.getByRole("button", { name: /^Choose a test/ }).click();
+    // Today's quiz can be set once and then is locked (the backend refuses to remove it), so this test only
+    // changes the two days after today, which it can set and remove again.
+    const rows = page.locator("tbody tr");
+    const todayIndex = await rows.evaluateAll((els) => els.findIndex((e) => e.textContent?.includes("Today")));
+    const tomorrow = rows.nth(todayIndex + 1);
+    const dayAfter = rows.nth(todayIndex + 2);
+    for (const r of [tomorrow, dayAfter]) {
+      if (await r.getByRole("button", { name: /^Remove/ }).count()) {
+        await r.getByRole("button", { name: /^Remove/ }).click();
+        await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
+        await expect(r).toContainText("Not set");
+      }
+    }
+    await tomorrow.getByRole("button", { name: /^Choose a test/ }).click();
     const d = page.getByRole("dialog");
     await d.getByLabel("Find a test").fill(test1.title);
     await d.getByRole("radio").first().check();
     await d.getByRole("button", { name: "Set as the quiz" }).click();
-    await expect(today).toContainText(test1.title);
+    await expect(tomorrow).toContainText(test1.title);
 
-    // The next day: the same test is refused, another is accepted.
-    const rows = page.locator("tbody tr");
-    const tomorrow = rows.nth((await rows.evaluateAll((els) => els.findIndex((e) => e.textContent?.includes("Today")))) + 1);
-    await tomorrow.getByRole("button", { name: /^Choose a test/ }).click();
+    // The same test cannot be the quiz on a second day; another test is accepted.
+    await dayAfter.getByRole("button", { name: /^Choose a test/ }).click();
     await page.getByRole("dialog").getByLabel("Find a test").fill(test1.title);
     await page.getByRole("dialog").getByRole("radio").first().check();
     await page.getByRole("dialog").getByRole("button", { name: "Set as the quiz" }).click();
@@ -269,10 +339,12 @@ test.describe("A8: daily quiz (sample schedule, real tests)", () => {
     await page.getByRole("dialog").getByLabel("Find a test").fill(test2.title);
     await page.getByRole("dialog").getByRole("radio").first().check();
     await page.getByRole("dialog").getByRole("button", { name: "Set as the quiz" }).click();
-    await expect(tomorrow).toContainText(test2.title);
-    await tomorrow.getByRole("button", { name: /^Remove/ }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
-    await expect(tomorrow).toContainText("Not set");
+    await expect(dayAfter).toContainText(test2.title);
+    for (const r of [tomorrow, dayAfter]) {
+      await r.getByRole("button", { name: /^Remove/ }).click();
+      await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
+      await expect(r).toContainText("Not set");
+    }
 
     // Days that have passed cannot be changed.
     const past = rows.first();

@@ -3,8 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { announcementsApi, currentAffairsAdminApi, dailyQuizAdminApi, logApi, usersApi, type AnnouncementInput, type CaInput, type CaStatus, type Role } from "@/lib/api/a8";
 
-// The same query keys serve the mock and the real routes, so nothing changes here when the backend arrives.
 export const useUsers = (p: { q?: string; role?: string }) => useQuery({ queryKey: ["a8", "users", p], queryFn: () => usersApi.list(p), staleTime: 5_000 });
+export const useEntityTypes = () => useQuery({ queryKey: ["a8", "entity-types"], queryFn: logApi.entityTypes, staleTime: 60_000 });
 export const useLog = (p: { actor?: string; action?: string; entityType?: string }) => useQuery({ queryKey: ["a8", "log", p], queryFn: () => logApi.list(p), staleTime: 5_000 });
 export const useAnnouncements = (status?: string) => useQuery({ queryKey: ["a8", "announcements", status ?? "all"], queryFn: () => announcementsApi.list(status || undefined), staleTime: 5_000 });
 export const useCaItems = (p: { exam?: string; status?: string }) => useQuery({ queryKey: ["a8", "ca", p], queryFn: () => currentAffairsAdminApi.list(p), staleTime: 5_000 });
@@ -20,7 +20,7 @@ export function useUserMutations() {
   const refresh = useRefresh();
   return {
     setRole: useMutation({ mutationFn: (v: { id: string; role: Role; reason: string }) => usersApi.setRole(v.id, v.role, v.reason), onSuccess: refresh }),
-    setStatus: useMutation({ mutationFn: (v: { id: string; status: "active" | "disabled"; reason: string }) => usersApi.setStatus(v.id, v.status, v.reason), onSuccess: refresh }),
+    setStatus: useMutation({ mutationFn: (v: { id: string; status: "active" | "suspended"; reason: string }) => usersApi.setStatus(v.id, v.status, v.reason), onSuccess: refresh }),
     invite: useMutation({ mutationFn: (b: Parameters<typeof usersApi.inviteStaff>[0]) => usersApi.inviteStaff(b), onSuccess: refresh }),
   };
 }

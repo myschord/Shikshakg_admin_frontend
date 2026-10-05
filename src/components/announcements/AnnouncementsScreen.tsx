@@ -11,7 +11,6 @@ import Dialog from "@/components/kit/Dialog";
 import ErrorState from "@/components/kit/ErrorState";
 import ExamSelect from "@/components/kit/ExamSelect";
 import Field, { inputClass } from "@/components/kit/Field";
-import MockBanner from "@/components/kit/MockBanner";
 import { ANNOUNCEMENT_STATUS_LABEL, type Announcement } from "@/lib/api/a8";
 import { formatDay, fromIstLocalInput, istDay, toIstLocalInput } from "@/lib/date";
 import { useAnnouncementMutations, useAnnouncements } from "@/lib/hooks/useA8";
@@ -88,7 +87,6 @@ export default function AnnouncementsScreen() {
           New announcement
         </Button>
       </div>
-      <MockBanner what="announcement routes" />
       <Field label="Show" className="max-w-xs">
         {(p) => (
           <select {...p} value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
