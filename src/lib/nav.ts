@@ -42,7 +42,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Commerce", href: "/commerce", icon: Wallet, roles: adminOnly, built: true },
       { label: "AI controls", href: "/ai-controls", icon: Sparkles, roles: adminOnly, built: true },
-      { label: "Embedding status", href: "/embeddings", icon: DatabaseZap, roles: both, built: true },
+      { label: "Embedding status", href: "/embeddings", icon: DatabaseZap, roles: adminOnly, built: true },
       { label: "Announcements", href: "/announcements", icon: Megaphone, roles: adminOnly, built: true },
       { label: "Users and roles", href: "/users", icon: UserCog, roles: adminOnly, built: true },
       { label: "Action log", href: "/action-log", icon: History, roles: adminOnly, built: true },
