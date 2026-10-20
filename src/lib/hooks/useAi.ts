@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { aiApi, type PolicyValues } from "@/lib/api/ai";
 
 export const usePolicy = () => useQuery({ queryKey: ["ai", "policy"], queryFn: aiApi.policy, staleTime: 10_000 });
+// Refreshes every minute so the backlog visibly falls while the 10-minute sweep works through it.
+export const useEmbeddingStatus = () => useQuery({ queryKey: ["ai", "embeddings"], queryFn: aiApi.embeddingStatus, staleTime: 30_000, refetchInterval: 60_000 });
 export const useSuspicious = (limit: number) => useQuery({ queryKey: ["ai", "suspicious", limit], queryFn: () => aiApi.suspicious(limit), staleTime: 30_000 });
 
 export function usePublishPolicy() {

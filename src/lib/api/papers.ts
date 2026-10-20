@@ -30,6 +30,32 @@ export const papersApi = {
   unpublish: (code: string) => api.post<Paper>(`/admin/papers/${e(code)}/unpublish`),
 };
 
+// PYQs grouped by exam and year (GET /admin/pyq/years). Written by hand until schema.d.ts is regenerated.
+export type PyqYear = {
+  exam_slug: string;
+  exam_name: string;
+  year: number;
+  papers: number;
+  papers_published: number;
+  papers_free: number;
+  papers_partial: number;
+  questions: number;
+  published: number;
+  in_review: number;
+  draft: number;
+  rejected_or_retired: number;
+  visible_to_students: number;
+  is_free: boolean;
+};
+export type PyqYearAction = { exam_slug: string; year: number; changed: string[]; unchanged: string[]; skipped: string[]; summary: PyqYear };
+
+export const pyqYearsApi = {
+  list: (exam?: string) => api.get<PyqYear[]>("/admin/pyq/years", { query: { exam: exam || undefined } }),
+  publish: (exam: string, year: number) => api.post<PyqYearAction>(`/admin/pyq/years/${e(exam)}/${year}/publish`),
+  unpublish: (exam: string, year: number) => api.post<PyqYearAction>(`/admin/pyq/years/${e(exam)}/${year}/unpublish`),
+  setFree: (exam: string, year: number, isFree: boolean) => api.put<PyqYearAction>(`/admin/pyq/years/${e(exam)}/${year}/free`, { is_free: isFree }),
+};
+
 export const testsApi = {
   series: (exam?: string) => api.get<Series[]>("/admin/test-series", { query: { exam } }),
   createSeries: (body: SeriesCreate) => api.post<Series>("/admin/test-series", body),
