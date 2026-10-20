@@ -94,9 +94,27 @@ export const GROUPS: Group[] = [
 
 export const ALL_FIELDS: FieldSpec[] = GROUPS.flatMap((g) => g.fields);
 
+// GET /admin/ai/embeddings/status. Written by hand until schema.d.ts is regenerated from the backend.
+export type EmbeddingCounts = { published: number; in_review: number; ready: number; missing: number; outdated: number };
+export type ExamEmbeddingRow = EmbeddingCounts & { exam_id: string; exam_slug: string; exam_name: string; last_embedded_at: string | null };
+export type PendingEmbedding = { question_id: string; exam_slug: string; status: string; reason: "missing" | "outdated"; preview: string; updated_at: string };
+export type EmbeddingStatus = {
+  checked_at: string;
+  model: string;
+  text_version: string;
+  sweep_interval_seconds: number;
+  totals: EmbeddingCounts;
+  pending_total: number;
+  not_indexed: Record<string, number>;
+  last_embedded_at: string | null;
+  exams: ExamEmbeddingRow[];
+  pending: PendingEmbedding[];
+};
+
 // Admin only. The backend answers with the version in force: a built-in default (version 0) until someone saves one.
 export const aiApi = {
   policy: () => api.get<Policy>("/admin/ai/policy"),
   publish: (values: PolicyValues, note: string | null) => api.put<Policy>("/admin/ai/policy", { exam_id: null, values, note }),
+  embeddingStatus: () => api.get<EmbeddingStatus>("/admin/ai/embeddings/status"),
   suspicious: (limit: number) => api.get<Suspicious[]>("/admin/analytics/suspicious-questions", { query: { limit } }),
 };

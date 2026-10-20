@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { papersApi, testsApi, type PaperCreate, type PaperUpdate, type SeriesCreate, type SeriesUpdate, type TestFromPaper, type TestUpdate } from "@/lib/api/papers";
+import { papersApi, pyqYearsApi, testsApi, type PaperCreate, type PaperUpdate, type SeriesCreate, type SeriesUpdate, type TestFromPaper, type TestUpdate } from "@/lib/api/papers";
 
 export const usePapers = (exam: string | null) =>
   useInfiniteQuery({
@@ -49,5 +49,20 @@ export function useTestMutations() {
     archive: useMutation({ mutationFn: (id: string) => testsApi.archive(id), onSuccess: refresh }),
     newVersion: useMutation({ mutationFn: (id: string) => testsApi.newVersion(id), onSuccess: refresh }),
     replaceQuestion: useMutation({ mutationFn: (v: { id: string; position: number; questionId: string }) => testsApi.replaceQuestion(v.id, v.position, v.questionId), onSuccess: refresh }),
+  };
+}
+
+export const usePyqYears = (exam: string) => useQuery({ queryKey: ["pyq-years", exam], queryFn: () => pyqYearsApi.list(exam), staleTime: 10_000 });
+
+/** Year-wide actions change many papers at once, so the paper lists are refreshed too. */
+export function usePyqYearMutations() {
+  const qc = useQueryClient();
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["pyq-years"] }), qc.invalidateQueries({ queryKey: ["papers"] })]);
+  type V = { exam: string; year: number };
+  return {
+    publish: useMutation({ mutationFn: (v: V) => pyqYearsApi.publish(v.exam, v.year), onSuccess: refresh }),
+    unpublish: useMutation({ mutationFn: (v: V) => pyqYearsApi.unpublish(v.exam, v.year), onSuccess: refresh }),
+    free: useMutation({ mutationFn: (v: V) => pyqYearsApi.setFree(v.exam, v.year, true), onSuccess: refresh }),
+    paid: useMutation({ mutationFn: (v: V) => pyqYearsApi.setFree(v.exam, v.year, false), onSuccess: refresh }),
   };
 }
