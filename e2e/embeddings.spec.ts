@@ -5,11 +5,11 @@ import { apiAs, createStaff, horizontalOverflow, newSession, signIn, type Accoun
 let editor: Account;
 
 test.beforeAll(async () => {
-  editor = await createStaff("content_editor");
+  editor = await createStaff("admin");
 });
 
 test.describe("Embedding status (real backend)", () => {
-  test("an editor finds it in the menu and sees the same numbers the backend reports", async ({ page, context }) => {
+  test("an admin finds it in the menu and sees the same numbers the backend reports", async ({ page, context }) => {
     const s = await newSession(editor);
     await signIn(context, s);
     await page.goto("/");
