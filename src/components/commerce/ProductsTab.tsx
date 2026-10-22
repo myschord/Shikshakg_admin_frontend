@@ -11,7 +11,8 @@ import Dialog from "@/components/kit/Dialog";
 import ErrorState from "@/components/kit/ErrorState";
 import ExamSelect from "@/components/kit/ExamSelect";
 import Field, { inputClass } from "@/components/kit/Field";
-import { PRODUCT_STATUS_LABEL, PRODUCT_TYPES, rupees, type Product, type ProductType } from "@/lib/api/commerce";
+import ProductContents from "@/components/commerce/ProductContents";
+import { PRODUCT_STATUS_LABEL, rupees, type Product, type ProductItem } from "@/lib/api/commerce";
 import { formatDay, fromIstLocalInput, toIstLocalInput } from "@/lib/date";
 import { useCategories } from "@/lib/hooks/useExamEvents";
 import { useCommerceMutations, useProducts } from "@/lib/hooks/useCommerce";
@@ -43,7 +44,20 @@ export default function ProductsTab() {
       ),
     },
     { key: "e", header: "Exam", cell: (p) => p.exam_slug },
-    { key: "t", header: "Gives access to", cell: (p) => p.components.map((c) => (c.entitlement_type === "COURSE_ACCESS" ? "Courses" : "Test series")).join(" and ") },
+    {
+      key: "t",
+      header: "What is inside",
+      cell: (p) => (
+        <ul className="max-w-xs space-y-0.5">
+          {p.components.map((c, i) => (
+            <li key={i} className="text-sm">
+              {c.title || c.entitlement_type}
+              {c.detail ? <span className="block text-xs text-ink-muted">{c.detail}</span> : null}
+            </li>
+          ))}
+        </ul>
+      ),
+    },
     {
       key: "pr",
       header: "Price",
@@ -151,7 +165,7 @@ function ProductForm({ open, product, defaultExam, onClose }: { open: boolean; p
   const categories = useCategories();
   const { createProduct, updateProduct } = useCommerceMutations();
   const [exam, setExam] = useState("");
-  const [type, setType] = useState<ProductType>("COURSE");
+  const [items, setItems] = useState<ProductItem[]>([]);
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -175,7 +189,7 @@ function ProductForm({ open, product, defaultExam, onClose }: { open: boolean; p
     setOrder(String(product?.display_order ?? 0));
     if (!product) {
       setExam("");
-      setType("COURSE");
+      setItems([]);
       setCode("");
       setLasts("FIXED_DAYS");
       setDays("365");
@@ -193,6 +207,7 @@ function ProductForm({ open, product, defaultExam, onClose }: { open: boolean; p
     if (!title.trim()) err.title = "Enter a title.";
     if (!/^-?\d+$/.test(order)) err.order = "Enter a whole number.";
     if (!edit) {
+      if (items.length === 0) err.items = "Pick at least one thing the student gets.";
       if (!CODE.test(code)) err.code = "Use capital letters and digits, joined with underscores, for example BPSC_COURSE_1Y.";
       if (!MONEY.test(amount)) err.amount = "Enter an amount like 499 or 499.50.";
       if (listAmount && !MONEY.test(listAmount)) err.list = "Enter an amount like 999 or leave it empty.";
@@ -211,14 +226,13 @@ function ProductForm({ open, product, defaultExam, onClose }: { open: boolean; p
         await createProduct.mutateAsync({
           code,
           exam_slug: examValue,
-          product_type: type,
           title: title.trim(),
           description: description.trim() || null,
           validity_type: lasts,
           validity_days: lasts === "FIXED_DAYS" ? Number(days) : null,
           valid_until: lasts === "FIXED_END_DATE" ? fromIstLocalInput(`${until}T23:59`) : null,
           display_order: Number(order),
-          components: type === "COMBO" ? [{ entitlement_type: "COURSE_ACCESS" }, { entitlement_type: "TEST_SERIES_ACCESS" }] : [{ entitlement_type: type === "COURSE" ? "COURSE_ACCESS" : "TEST_SERIES_ACCESS" }],
+          components: items,
           amount,
           list_amount: listAmount || null,
           gst_rate: gst,
@@ -235,22 +249,27 @@ function ProductForm({ open, product, defaultExam, onClose }: { open: boolean; p
       <form onSubmit={submit} noValidate className="space-y-4">
         {edit ? (
           <p className="rounded-lg bg-bg-tint px-3 py-2 text-sm">
-            <span className="font-mono">{product!.code}</span> for {product!.exam_slug}. The code, exam, kind and price are fixed here; use Change price for the price.
+            <span className="font-mono">{product!.code}</span> for {product!.exam_slug}. The code, exam, contents and price are fixed here; use Change price for the price.
           </p>
+        ) : null}
+        {edit ? (
+          <div className="rounded-xl border border-border-tint p-3 text-sm">
+            <p className="font-semibold text-ink">What is inside</p>
+            <ul className="mt-1 list-disc pl-5 text-ink">
+              {product!.components.map((c, i) => (
+                <li key={i}>
+                  {c.title || c.entitlement_type}
+                  {c.detail ? <span className="text-ink-muted"> · {c.detail}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Exam" required>{(p) => <ExamSelect {...p} value={examValue} onChange={setExam} />}</Field>
-            <Field label="Gives access to" required help={PRODUCT_TYPES.find((t) => t.v === type)?.help}>
-              {(p) => (
-                <select {...p} value={type} onChange={(e) => setType(e.target.value as ProductType)} className={inputClass}>
-                  {PRODUCT_TYPES.map((t) => (
-                    <option key={t.v} value={t.v}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Field>
+            <Field label="Exam" required>{(p) => <ExamSelect {...p} value={examValue} onChange={(slug) => { setExam(slug); setItems([]); }} />}</Field>
+            <div className="sm:col-span-2">
+              <ProductContents exam={examValue} value={items} onChange={setItems} error={errors.items} />
+            </div>
             <Field label="Product code" required error={errors.code} help="Cannot be changed later." className="sm:col-span-2">{(p) => <input {...p} value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))} maxLength={64} className={`${inputClass} font-mono`} />}</Field>
           </div>
         )}

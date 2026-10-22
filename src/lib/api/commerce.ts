@@ -11,17 +11,11 @@ export type PriceCreate = S["PriceCreateIn"];
 export type Order = S["OrderAdminOut"];
 export type Refund = S["RefundAdminOut"];
 export type Entitlement = S["EntitlementAdminOut"];
-export type ProductType = ProductCreate["product_type"];
-
-export const PRODUCT_TYPES: { v: ProductType; label: string; help: string }[] = [
-  { v: "COURSE", label: "Course", help: "Unlocks the video courses of the exam." },
-  { v: "TEST_SERIES", label: "Test series", help: "Unlocks the paid test series of the exam." },
-  { v: "COMBO", label: "Course and test series", help: "Unlocks both." },
-];
+export type ProductItem = S["ProductComponentIn"];
 export const PRODUCT_STATUS_LABEL: Record<string, string> = { draft: "Draft", active: "On sale", retired: "Retired" };
 export const ORDER_STATUS_LABEL: Record<string, string> = { created: "Created", pending_payment: "Waiting for payment", paid: "Paid", failed: "Failed", cancelled: "Cancelled", expired: "Expired", refunded: "Refunded", partially_refunded: "Partly refunded" };
 export const REFUND_STATUS_LABEL: Record<string, string> = { requested: "Waiting for a decision", processing: "Being sent", processed: "Refunded", failed: "Failed" };
-export const ENTITLEMENT_LABEL: Record<string, string> = { COURSE_ACCESS: "Courses", TEST_SERIES_ACCESS: "Test series" };
+export const ENTITLEMENT_LABEL: Record<string, string> = { COURSE_ACCESS: "Courses", TEST_SERIES_ACCESS: "Test series", PYQ_ACCESS: "Previous-year papers" };
 export const GRANT_SOURCE_LABEL: Record<string, string> = { purchase: "Bought", admin_grant: "Given by staff", trial: "Trial" };
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2 });

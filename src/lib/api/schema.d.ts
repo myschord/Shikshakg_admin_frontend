@@ -4241,7 +4241,7 @@ export interface components {
          * EntitlementType
          * @enum {string}
          */
-        EntitlementType: "COURSE_ACCESS" | "TEST_SERIES_ACCESS";
+        EntitlementType: "COURSE_ACCESS" | "TEST_SERIES_ACCESS" | "PYQ_ACCESS";
         /** EventCreate */
         EventCreate: {
             /** Title */
@@ -6028,11 +6028,21 @@ export interface components {
         /** ProductComponentIn */
         ProductComponentIn: {
             entitlement_type: components["schemas"]["EntitlementType"];
+            /** Course Id */
+            course_id?: string | null;
+            /** Test Series Id */
+            test_series_id?: string | null;
         };
         /** ProductComponentOut */
         ProductComponentOut: {
             /** Entitlement Type */
             entitlement_type: string;
+            course_id?: string | null;
+            test_series_id?: string | null;
+            /** Title */
+            title?: string;
+            /** Detail */
+            detail?: string | null;
         };
         /** ProductCreateIn */
         ProductCreateIn: {
@@ -6040,7 +6050,7 @@ export interface components {
             code: string;
             /** Exam Slug */
             exam_slug: string;
-            product_type: components["schemas"]["ProductType"];
+            product_type?: components["schemas"]["ProductType"] | null;
             /** Title */
             title: string;
             /** Description */
@@ -6105,7 +6115,7 @@ export interface components {
          * ProductType
          * @enum {string}
          */
-        ProductType: "COURSE" | "TEST_SERIES" | "COMBO";
+        ProductType: "COURSE" | "TEST_SERIES" | "PYQ" | "COMBO";
         /** ProductUpdateIn */
         ProductUpdateIn: {
             /** Title */
